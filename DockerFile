@@ -1,0 +1,22 @@
+FROM python:3.11-slim
+
+# Install Docker
+RUN apt-get update && apt-get install -y \
+    docker.io \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set workdir
+WORKDIR /app
+
+# Copy schema and script
+COPY db/schema/user.sql /app/db/schema/user.sql
+COPY scripts/start_postgres.sh /app/scripts/start_postgres.sh
+COPY scripts/fastapi_startup.sh /app/scripts/fastapi_startup.sh
+COPY scripts/entrypoint.sh /app/scripts/entrypoint.sh
+COPY .env /app/.env
+RUN chmod +x /app/scripts/start_postgres.sh
+RUN chmod +x /app/scripts/fastapi_startup.sh
+RUN chmod +x /app/scripts/entrypoint.sh
+
+# Run the entrypoint script as the container startup command
+CMD ["/app/scripts/entrypoint.sh"]

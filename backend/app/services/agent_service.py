@@ -3,8 +3,8 @@ from abc import abstractmethod
 from langgraph.graph import StateGraph
 from pydantic import BaseModel
 
-from app.core.agentic.base_agent_workflow import BaseAgentWorkflow
-from app.core.agentic.base_agent_function import BaseAgentFunction
+from app.core.agentic.agent_workflows.base_agent_workflow import BaseAgentWorkflow
+from app.core.agentic.agent_functions.base_agent_function import BaseAgentFunction
 from pydantic import BaseModel
 from app.core.logger import logger
 

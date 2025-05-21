@@ -4,13 +4,6 @@ import uvicorn
 
 from app.core.logger import logger
 
-from app.api.user import router as user_router
-from app.api.user_insurance import router as user_insurance_router
-from app.api.voice import router as voice_router
-#
-
-# from app.api.v2.appeal import router as v2_appeal_router
-# from app.api.v2.appeal_documents import router as v2_appeal_documents_router
 
 app = FastAPI(
     title="Dagger API",
@@ -18,10 +11,7 @@ app = FastAPI(
     version="0.0.1",
     logger=logger,
 )
-# app.add_middleware(
-#     RawRequestLoggerMiddleware,
-#     exclude_paths=["/health"],
-# )
+
 
 app.add_middleware(
     CORSMiddleware,
