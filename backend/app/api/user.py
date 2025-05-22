@@ -37,3 +37,17 @@ async def update_user(request: UpdateUserRequest, db: AsyncSession = Depends(get
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/get_user_by_username", response_model=user)
+async def get_user_by_username(username: str, db: AsyncSession = Depends(get_db)):
+    try:
+        result = await user_repository.get_by_username(db, username)
+        if result is None:
+            new_user = await user_repository.create_user(
+                db, user(username=username, id=uuid.uuid4())
+            )
+            return new_user
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -3,6 +3,7 @@ from typing import List
 from app.core.repository.base_repository import BaseRepository
 from app.schema.repository.user import UserSchema, user
 from fastapi import HTTPException
+from app.core.logger import logger
 
 
 class UserRepository(BaseRepository[UserSchema]):
@@ -11,7 +12,19 @@ class UserRepository(BaseRepository[UserSchema]):
 
     async def create_user(self, db, user: user) -> user:
         user_data = user.model_dump()
+        logger.info(f"Creating user: {user_data}")
         return await self.create(db, **user_data)
+
+    async def get_by_username(self, db, username: str) -> user | None:
+        try:
+            query = select(self.model).where(self.model.username == username)
+            result = await db.execute(query)
+            user_obj = result.scalar_one_or_none()
+            logger.info(f"User found: {user_obj}")
+            return user_obj
+        except Exception as e:
+            logger.error(f"Error getting user by username: {e}")
+            raise HTTPException(status_code=404, message=str(e))
 
     async def get_user(self, db, id: str) -> user:
         id_value = self._convert_id(id)
