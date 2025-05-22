@@ -1,0 +1,13 @@
+
+
+add a field to dag for team, use the foreign key of a team,
+also add a field for team to user, also using foreign key.
+I've decided to make the user/team and dag/team relationship a many to one relationship. In fact, i'd like to rename "team" to "organization. make all necessary edits to accomplish this. 
+any time I edit/create a new db entry, I need a db/schema/table_name.sql, db/example_data/table_name.json, an update to start_postgres.sh, an app/core/schema/table_name.py, an app/core/repository/table_name_repository.py and an app/api/table_name.py with a post and get. 
+
+use app/core/logger.py
+
+
+
+
+in @dag.py , replace get_all_edges with get_dags_for_team, which takes a team and returns a list of tuples (dagadjacencylist, tasks)

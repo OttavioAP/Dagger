@@ -1,4 +1,5 @@
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    username VARCHAR(100) NOT NULL UNIQUE
+    username VARCHAR(100) NOT NULL UNIQUE,
+    team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE
 ); 
