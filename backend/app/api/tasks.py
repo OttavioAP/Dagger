@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 from app.services.database_service import get_db
-from app.core.repository.tasks_repository import TasksRepository
+from app.core.repository.task_repository import TasksRepository
 from app.schema.repository.tasks import task
 from pydantic import BaseModel
 from typing import Optional, Any
@@ -25,7 +25,7 @@ class TaskRequest(BaseModel):
 
 
 @router.post("/", response_model=task, status_code=201)
-async def task(request: TaskRequest, db: AsyncSession = Depends(get_db)):
+async def task_action(request: TaskRequest, db: AsyncSession = Depends(get_db)):
     try:
         # conditionally create, edit, or delete task
         if request.action == task_action.create:

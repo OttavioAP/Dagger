@@ -26,29 +26,23 @@ class DagRepository(BaseRepository[DagSchema]):
         async with db.begin():
             await db.execute(text("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE"))
             await db.execute(text("LOCK TABLE dag IN EXCLUSIVE MODE"))
-            # Fetch current adjacency list for this dag
             graph = await self._get_adjacency_list_for_dag(db, dag_id)
-            from_id = str(from_task_id)
-            to_id = str(to_task_id)
-            graph.setdefault(from_id, [])
-            if to_id not in graph[from_id]:
-                graph[from_id].append(to_id)
-            # Check for cycles
-            if self._creates_cycle_in_memory(graph, from_id):
+            if to_task_id not in graph.get(from_task_id, []):
+                graph.setdefault(from_task_id, []).append(to_task_id)
+            if self._creates_cycle_in_memory(graph, from_task_id):
                 logger.warning(
-                    f"Cycle detected when adding edge {from_id}->{to_id} in DAG {dag_id}"
+                    f"Cycle detected when adding edge {from_task_id}->{to_task_id} in DAG {dag_id}"
                 )
                 raise HTTPException(
                     status_code=400, detail="Adding this edge would create a cycle."
                 )
-            # Persist the edge and update dag_graph
             await db.execute(
                 insert(DagSchema).values(
                     dag_id=dag_id, from_task_id=from_task_id, to_task_id=to_task_id
                 )
             )
             await self._update_dag_graph_for_dag(db, dag_id, graph)
-            logger.info(f"Edge {from_id}->{to_id} added to DAG {dag_id}")
+            logger.info(f"Edge {from_task_id}->{to_task_id} added to DAG {dag_id}")
             return DagAdjacencyList(dag_id=dag_id, adjacency_list=graph)
 
     async def delete_edge(
@@ -61,13 +55,9 @@ class DagRepository(BaseRepository[DagSchema]):
         async with db.begin():
             await db.execute(text("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE"))
             await db.execute(text("LOCK TABLE dag IN EXCLUSIVE MODE"))
-            # Fetch current adjacency list for this dag
             graph = await self._get_adjacency_list_for_dag(db, dag_id)
-            from_id = str(from_task_id)
-            to_id = str(to_task_id)
-            if from_id in graph and to_id in graph[from_id]:
-                graph[from_id].remove(to_id)
-            # Persist the delete and update dag_graph
+            if from_task_id in graph and to_task_id in graph[from_task_id]:
+                graph[from_task_id].remove(to_task_id)
             await db.execute(
                 delete(DagSchema).where(
                     DagSchema.dag_id == dag_id,
@@ -76,7 +66,7 @@ class DagRepository(BaseRepository[DagSchema]):
                 )
             )
             await self._update_dag_graph_for_dag(db, dag_id, graph)
-            logger.info(f"Edge {from_id}->{to_id} deleted from DAG {dag_id}")
+            logger.info(f"Edge {from_task_id}->{to_task_id} deleted from DAG {dag_id}")
             return DagAdjacencyList(dag_id=dag_id, adjacency_list=graph)
 
     async def create_dag(self, db: AsyncSession, dag_id: uuid.UUID):
@@ -94,20 +84,22 @@ class DagRepository(BaseRepository[DagSchema]):
         edges = result.fetchall()
         graph = {}
         for edge in edges:
-            f, t = str(edge.from_task_id), str(edge.to_task_id)
-            graph.setdefault(f, []).append(t)
+            f, t = edge.from_task_id, edge.to_task_id
+            graph.setdefault(f, [])
+            graph[f].append(t)
             if t not in graph:
                 graph[t] = []
         return graph
 
     async def _update_dag_graph_for_dag(
-        self, db: AsyncSession, dag_id: uuid.UUID, graph
+        self, db: AsyncSession, dag_id: uuid.UUID, graph: dict
     ):
+        graph_str = {str(k): [str(v) for v in vs] for k, vs in graph.items()}
         await db.execute(
             update(text("dags"))
             .where(text("id = :id"))
             .params(id=str(dag_id))
-            .values(dag_graph=json.dumps(graph))
+            .values(dag_graph=json.dumps(graph_str))
         )
 
     def _creates_cycle_in_memory(self, graph, from_id):
@@ -130,7 +122,6 @@ class DagRepository(BaseRepository[DagSchema]):
         return visit(from_id)
 
     async def get_full_dag(self, db: AsyncSession, dag_id: uuid.UUID) -> dag:
-        # Fetch DAG meta (team_id, dag_graph)
         result = await db.execute(
             text("SELECT id, team_id, dag_graph FROM dags WHERE id = :id"),
             {"id": str(dag_id)},
@@ -139,21 +130,21 @@ class DagRepository(BaseRepository[DagSchema]):
         if not row:
             raise HTTPException(status_code=404, detail="DAG not found")
         dag_id, team_id, dag_graph_json = row
-        dag_graph = json.loads(dag_graph_json) if dag_graph_json else {}
+        dag_graph = {
+            uuid.UUID(k): [uuid.UUID(v) for v in vs]
+            for k, vs in (json.loads(dag_graph_json) if dag_graph_json else {}).items()
+        }
 
-        # Collect all unique task_ids from the adjacency list
         task_ids = set()
         for from_id, to_ids in dag_graph.items():
             task_ids.add(from_id)
             task_ids.update(to_ids)
         task_ids = list(task_ids)
 
-        # Fetch all tasks using TasksRepository
         tasks_repo = TasksRepository()
         tasks = await tasks_repo.get_tasks_by_ids(db, task_ids)
         task_objs = [TaskModel.from_orm(t) for t in tasks]
 
-        # Build and return the dag Pydantic model
         return dag(
             dag_id=dag_id,
             team_id=team_id,

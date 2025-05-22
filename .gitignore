@@ -1,3 +1,7 @@
 .vscode
 .env
 notes
+__pycache__/
+*.pyc
+*__pycache__
+backend/logs/

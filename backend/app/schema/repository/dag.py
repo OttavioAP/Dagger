@@ -9,7 +9,7 @@ from app.schema.repository.tasks import task
 
 class DagAdjacencyList(BaseModel):
     dag_id: uuid.UUID
-    adjacency_list: Dict[str, List[str]]
+    adjacency_list: Dict[uuid.UUID, list[uuid.UUID]]
 
 
 class dag(BaseModel):
