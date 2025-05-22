@@ -1,0 +1,23 @@
+notes
+
+# Connect to the database
+docker exec -it my_postgres psql -U postgres
+
+# Once inside psql, you can:
+\l           # List all databases
+\c postgres  # Connect to postgres database
+\dt          # List all tables
+\d users     # Describe the users table
+SELECT * FROM users;  # View all users
+
+# List all tables
+docker exec -it my_postgres psql -U postgres -c "\dt"
+
+# View users table
+docker exec -it my_postgres psql -U postgres -c "SELECT * FROM users;"
+
+\?          # Show all psql commands
+\du         # List users
+\dt+        # List tables with size and description
+\d+ users   # Detailed table description
+\q          # Quit psql
