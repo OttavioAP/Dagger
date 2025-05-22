@@ -10,4 +10,4 @@ use app/core/logger.py
 
 
 
-in @dag.py , replace get_all_edges with get_dags_for_team, which takes a team and returns a list of tuples (dagadjacencylist, tasks)
+in @dag.py , replace get_all_edges with get_dag_for_team, which takes a team and returns a list of tuples (dagadjacencylist, tasks)
