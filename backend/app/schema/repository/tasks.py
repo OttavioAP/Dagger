@@ -42,7 +42,7 @@ class TaskSchema(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     date_of_creation = Column(TIMESTAMP(timezone=True), nullable=True)
-    priority = Column(int, nullable=False)
+    priority = Column(Integer, nullable=False)
     task_name = Column(Text, nullable=False)
     team_id = Column(
         UUID(as_uuid=True), ForeignKey("teams.id", ondelete="CASCADE"), nullable=False

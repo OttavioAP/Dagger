@@ -8,6 +8,8 @@ from app.api.tasks import router as tasks_router
 from app.api.teams import router as teams_router
 from app.api.dag import router as dags_router
 from app.api.user_tasks import router as user_tasks_router
+from app.api.week import router as weeks_router
+from app.api.agentic import router as agentic_router
 
 app = FastAPI(
     title="Dagger API",
@@ -33,6 +35,8 @@ app.include_router(tasks_router)
 app.include_router(teams_router)
 app.include_router(dags_router)
 app.include_router(user_tasks_router)
+app.include_router(weeks_router)
+app.include_router(agentic_router)
 
 
 @app.get("/health")
