@@ -25,7 +25,7 @@ class DagAction(str, Enum):
 class DagRequest(BaseModel):
     dag_id: uuid.UUID
     first_task_id: uuid.UUID
-    second_task_id: Optional[uuid.UUID] = None
+    second_task_id: uuid.UUID = None
     action: DagAction
 
 
@@ -33,7 +33,15 @@ class DagRequest(BaseModel):
 async def dag_action(request: DagRequest, db: AsyncSession = Depends(get_db)):
     try:
         if request.action == DagAction.create:
-            await dag_repository.create_dag(db, request.dag_id)
+            if request.first_task_id and request.second_task_id:
+                await dag_repository.create_dag(
+                    db, request.dag_id, request.first_task_id, request.second_task_id
+                )
+            else:
+                raise HTTPException(
+                    status_code=400,
+                    detail="first_task_id and second_task_id required for create",
+                )
             logger.info(f"DAG {request.dag_id} created via API")
         elif request.action == DagAction.add_edge:
             if not request.second_task_id:

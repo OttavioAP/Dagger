@@ -22,10 +22,10 @@ echo "Postgres is ready. Applying schema."
 # Copy schema files into container and apply
 SCHEMA_PATH_USER="/tmp/user.sql"
 SCHEMA_PATH_TEAM="/tmp/team.sql"
-SCHEMA_PATH_USER_TEAMS="/tmp/user_teams.sql"
 SCHEMA_PATH_TASKS="/tmp/tasks.sql"
 SCHEMA_PATH_USER_TASKS="/tmp/user_tasks.sql"
 SCHEMA_PATH_DAG="/tmp/dag.sql"
+SCHEMA_PATH_WEEK="/tmp/week.sql"
 
 
 docker cp db/schema/team.sql $CONTAINER_NAME:$SCHEMA_PATH_TEAM
@@ -34,12 +34,12 @@ docker cp db/schema/tasks.sql $CONTAINER_NAME:$SCHEMA_PATH_TASKS
 docker exec -u $POSTGRES_USER $CONTAINER_NAME psql -d $POSTGRES_DB -f $SCHEMA_PATH_TASKS
 docker cp db/schema/user.sql $CONTAINER_NAME:$SCHEMA_PATH_USER
 docker exec -u $POSTGRES_USER $CONTAINER_NAME psql -d $POSTGRES_DB -f $SCHEMA_PATH_USER
-docker cp db/schema/user_teams.sql $CONTAINER_NAME:$SCHEMA_PATH_USER_TEAMS
-docker exec -u $POSTGRES_USER $CONTAINER_NAME psql -d $POSTGRES_DB -f $SCHEMA_PATH_USER_TEAMS
 docker cp db/schema/user_tasks.sql $CONTAINER_NAME:$SCHEMA_PATH_USER_TASKS
 docker exec -u $POSTGRES_USER $CONTAINER_NAME psql -d $POSTGRES_DB -f $SCHEMA_PATH_USER_TASKS
 docker cp db/schema/dag.sql $CONTAINER_NAME:$SCHEMA_PATH_DAG
 docker exec -u $POSTGRES_USER $CONTAINER_NAME psql -d $POSTGRES_DB -f $SCHEMA_PATH_DAG
+docker cp db/schema/week.sql $CONTAINER_NAME:$SCHEMA_PATH_WEEK
+docker exec -u $POSTGRES_USER $CONTAINER_NAME psql -d $POSTGRES_DB -f $SCHEMA_PATH_WEEK
 
 
 
@@ -54,10 +54,7 @@ if [ -f "db/example_data/init_users.sql" ]; then
   docker exec -u $POSTGRES_USER $CONTAINER_NAME psql -d $POSTGRES_DB -f /tmp/init_users.sql
 fi
 
-if [ -f "db/example_data/init_user_teams.sql" ]; then
-  docker cp db/example_data/init_user_teams.sql $CONTAINER_NAME:/tmp/
-  docker exec -u $POSTGRES_USER $CONTAINER_NAME psql -d $POSTGRES_DB -f /tmp/init_user_teams.sql
-fi
+
 
 if [ -f "db/example_data/init_user.sql" ]; then
   docker cp db/example_data/init_user.sql $CONTAINER_NAME:/tmp/
@@ -72,4 +69,9 @@ fi
 if [ -f "db/example_data/init_dag.sql" ]; then
   docker cp db/example_data/init_dag.sql $CONTAINER_NAME:/tmp/
   docker exec -u $POSTGRES_USER $CONTAINER_NAME psql -d $POSTGRES_DB -f /tmp/init_dag.sql
+fi
+
+if [ -f "db/example_data/init_week.sql" ]; then
+  docker cp db/example_data/init_week.sql $CONTAINER_NAME:/tmp/
+  docker exec -u $POSTGRES_USER $CONTAINER_NAME psql -d $POSTGRES_DB -f /tmp/init_week.sql
 fi

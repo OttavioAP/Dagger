@@ -15,6 +15,7 @@ class task(BaseModel):
     deadline: Optional[str] = None
     points: Optional[int] = None
     date_of_completion: Optional[str] = None
+    date_of_creation: str = None
     description: Optional[str] = None
     notes: Optional[str] = None
     task_data: Optional[Any] = None
@@ -27,6 +28,8 @@ class task(BaseModel):
             deadline=obj.deadline,
             points=obj.points,
             date_of_completion=obj.date_of_completion,
+            date_of_creation=obj.date_of_creation,
+            priority=obj.priority,
             description=obj.description,
             notes=obj.notes,
             task_data=obj.task_data,
@@ -37,6 +40,8 @@ class TaskSchema(Base):
     __tablename__ = "tasks"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    date_of_creation = Column(TIMESTAMP(timezone=True), nullable=True)
+    priority = Column(int, nullable=False)
     task_name = Column(Text, nullable=False)
     team_id = Column(
         UUID(as_uuid=True), ForeignKey("teams.id", ondelete="CASCADE"), nullable=False
