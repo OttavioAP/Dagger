@@ -2,6 +2,5 @@ CREATE TABLE IF NOT EXISTS user_tasks (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
   PRIMARY KEY (user_id, task_id),
-  role TEXT,
   assigned_at TIMESTAMPTZ DEFAULT NOW()
 ); 

@@ -134,6 +134,23 @@ class DagRepository:
             )
             raise
 
+    async def get_dags_by_team(self, db: AsyncSession, team_id: uuid.UUID):
+        try:
+            result = await db.execute(
+                select(DagSchema).where(DagSchema.team_id == team_id)
+            )
+            objs = result.scalars().all()
+            dags = []
+            for obj in objs:
+                dag_graph = json.loads(obj.dag_graph)
+                dags.append(
+                    dag(dag_id=obj.dag_id, team_id=obj.team_id, dag_graph=dag_graph)
+                )
+            return dags
+        except Exception as e:
+            logger.error(f"Error fetching DAGs for team {team_id}: {e}")
+            raise
+
 
 # Note: The existence of both dag (Pydantic model) and DagSchema (SQLAlchemy model) is common in FastAPI projects.
 # dag is used for data validation/serialization (API), while DagSchema is the ORM model for DB operations.

@@ -14,5 +14,8 @@ class UserTasksRepository(BaseRepository[UserTasksSchema]):
         user_task_data = user_task.model_dump()
         return await self.create(db, **user_task_data)
 
+    async def delete_user_task(self, db, user_id: str, task_id: str) -> None:
+        await self.delete(db, user_id, task_id)
+
     async def get_all_user_tasks(self, db) -> List[user_tasks]:
         return await self.get_all(db)

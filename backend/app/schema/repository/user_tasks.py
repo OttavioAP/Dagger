@@ -11,7 +11,6 @@ class user_tasks(BaseModel):
 
     user_id: uuid.UUID
     task_id: uuid.UUID
-    role: Optional[str] = None
     assigned_at: Optional[str] = None
 
     @classmethod
@@ -19,7 +18,6 @@ class user_tasks(BaseModel):
         return cls(
             user_id=obj.user_id,
             task_id=obj.task_id,
-            role=obj.role,
             assigned_at=obj.assigned_at,
         )
 
@@ -33,5 +31,4 @@ class UserTasksSchema(Base):
     task_id = Column(
         UUID(as_uuid=True), ForeignKey("tasks.id", ondelete="CASCADE"), primary_key=True
     )
-    role = Column(String, nullable=True)
     assigned_at = Column(TIMESTAMP(timezone=True), nullable=True)

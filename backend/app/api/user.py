@@ -51,3 +51,11 @@ async def get_user_by_username(username: str, db: AsyncSession = Depends(get_db)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/by_team", response_model=List[user])
+async def get_users_by_team(team_id: str, db: AsyncSession = Depends(get_db)):
+    try:
+        return await user_repository.get_users_by_team(db, team_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

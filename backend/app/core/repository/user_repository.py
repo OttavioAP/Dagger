@@ -61,3 +61,8 @@ class UserRepository(BaseRepository[UserSchema]):
 
     async def get_all_users(self, db) -> List[user]:
         return await self.get_all(db)
+
+    async def get_users_by_team(self, db, team_id: str):
+        query = select(self.model).where(self.model.team_id == team_id)
+        result = await db.execute(query)
+        return result.scalars().all()

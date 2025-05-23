@@ -7,7 +7,7 @@ from app.schema.repository.tasks import task
 from app.schema.repository.dag import dag as DagModel
 from pydantic import BaseModel
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 from app.core.logger import logger
 import uuid
 
@@ -64,4 +64,13 @@ async def dag_action(request: DagRequest, db: AsyncSession = Depends(get_db)):
         return await dag_repository.get_full_dag(db, request.dag_id)
     except Exception as e:
         logger.error(f"DAG API error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/by_team", response_model=List[DagModel])
+async def get_dags_by_team(team_id: str, db: AsyncSession = Depends(get_db)):
+    try:
+        return await dag_repository.get_dags_by_team(db, team_id)
+    except Exception as e:
+        logger.error(f"Error in get_dags_by_team: {e}")
         raise HTTPException(status_code=500, detail=str(e))
