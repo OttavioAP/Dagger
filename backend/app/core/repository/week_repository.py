@@ -24,3 +24,11 @@ class WeekRepository(BaseRepository[WeekSchema]):
             )
         result = await db.execute(query)
         return [week.from_orm(obj) for obj in result.scalars().all()]
+
+    async def create_week(self, db, week_obj: week) -> week:
+        week_data = week_obj.model_dump()
+        db_week = WeekSchema(**week_data)
+        db.add(db_week)
+        await db.commit()
+        await db.refresh(db_week)
+        return week.from_orm(db_week)

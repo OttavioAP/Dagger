@@ -19,3 +19,15 @@ class UserTasksRepository(BaseRepository[UserTasksSchema]):
 
     async def get_all_user_tasks(self, db) -> List[user_tasks]:
         return await self.get_all(db)
+
+    async def get_task_ids_for_user(self, db, user_id):
+        result = await db.execute(
+            select(UserTasksSchema.task_id).where(UserTasksSchema.user_id == user_id)
+        )
+        return [row[0] for row in result.fetchall()]
+
+    async def get_user_ids_for_task(self, db, task_id):
+        result = await db.execute(
+            select(UserTasksSchema.user_id).where(UserTasksSchema.task_id == task_id)
+        )
+        return [row[0] for row in result.fetchall()]

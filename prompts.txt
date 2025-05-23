@@ -11,3 +11,35 @@ use app/core/logger.py
 
 
 in @dag.py , replace get_all_edges with get_dag_for_team, which takes a team and returns a list of tuples (dagadjacencylist, tasks)
+
+
+
+need start of week datetime, end of weekdatetime and user_id and week object being constructed
+
+find missed deadlines function
+get all tasks for user with user_id that
+(are unfinished and have date of completion before end of week datetime OR (are finished AND have date of completion after start of week datetime but after their due date))
+add task ids to missed deadlines list of week object
+
+find collaborators function
+for all tasks matching user in user_tasks table
+if no completion date or completion date is after start of week datetime but before end of week datetime
+if other users also assigned to task
+add user id to collaborators list of week object
+
+ai agentic function
+add todo here for actually calling the ai agentic function
+for now set summary and feedback to "summary and feedback"
+
+for completed tasks function
+get all tasks with completion date after start of week datetime but before end of week datetime
+add task ids to completed tasks list of week object
+add points to points completed of week object
+
+need a function to call the above functions, create the week in the database and return the week object
+
+
+
+
+
+

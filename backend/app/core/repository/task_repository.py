@@ -65,3 +65,50 @@ class TasksRepository(BaseRepository[TaskSchema]):
             return []
         result = await db.execute(select(TaskSchema).where(TaskSchema.id.in_(task_ids)))
         return result.scalars().all()
+
+    async def get_tasks_by_user(self, db: AsyncSession, user_id):
+        from app.core.repository.user_tasks_repository import UserTasksRepository
+
+        user_tasks_repo = UserTasksRepository()
+        task_ids = await user_tasks_repo.get_task_ids_for_user(db, user_id)
+        if not task_ids:
+            return []
+        result = await db.execute(select(TaskSchema).where(TaskSchema.id.in_(task_ids)))
+        return [task.from_orm(obj) for obj in result.scalars().all()]
+
+    async def get_completed_tasks_for_user_in_range(
+        self, db: AsyncSession, user_id, start_date, end_date
+    ):
+        from app.core.repository.user_tasks_repository import UserTasksRepository
+
+        user_tasks_repo = UserTasksRepository()
+        task_ids = await user_tasks_repo.get_task_ids_for_user(db, user_id)
+        if not task_ids:
+            return []
+        result = await db.execute(
+            select(TaskSchema).where(
+                TaskSchema.id.in_(task_ids),
+                TaskSchema.date_of_completion != None,
+                TaskSchema.date_of_completion >= start_date,
+                TaskSchema.date_of_completion <= end_date,
+            )
+        )
+        return [task.from_orm(obj) for obj in result.scalars().all()]
+
+    async def get_unfinished_tasks_for_user_before(
+        self, db: AsyncSession, user_id, end_date
+    ):
+        from app.core.repository.user_tasks_repository import UserTasksRepository
+
+        user_tasks_repo = UserTasksRepository()
+        task_ids = await user_tasks_repo.get_task_ids_for_user(db, user_id)
+        if not task_ids:
+            return []
+        result = await db.execute(
+            select(TaskSchema).where(
+                TaskSchema.id.in_(task_ids),
+                TaskSchema.date_of_completion == None,
+                TaskSchema.deadline <= end_date,
+            )
+        )
+        return [task.from_orm(obj) for obj in result.scalars().all()]

@@ -4,14 +4,15 @@ from app.services.database_service import Base
 from sqlalchemy import Column, String, Integer, Text, TIMESTAMP, ForeignKey
 import uuid
 from typing import Optional, Dict, Any, List
+from datetime import datetime
 
 
 class week(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     id: Optional[uuid.UUID] = None
-    start_date: str
-    end_date: str
+    start_date: datetime
+    end_date: datetime
     user_id: uuid.UUID
     summary: Optional[str] = None
     feedback: Optional[str] = None
@@ -24,8 +25,8 @@ class week(BaseModel):
     def from_orm(cls, obj):
         return cls(
             id=obj.id,
-            start_date=str(obj.start_date),
-            end_date=str(obj.end_date),
+            start_date=obj.start_date,
+            end_date=obj.end_date,
             user_id=obj.user_id,
             summary=obj.summary,
             feedback=obj.feedback,

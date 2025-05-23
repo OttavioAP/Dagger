@@ -4,6 +4,7 @@ from app.services.database_service import Base
 from sqlalchemy import Column, String, TIMESTAMP, ForeignKey
 import uuid
 from typing import Optional
+from datetime import datetime
 
 
 class user_tasks(BaseModel):
@@ -11,7 +12,7 @@ class user_tasks(BaseModel):
 
     user_id: uuid.UUID
     task_id: uuid.UUID
-    assigned_at: Optional[str] = None
+    assigned_at: Optional[datetime] = None
 
     @classmethod
     def from_orm(cls, obj):

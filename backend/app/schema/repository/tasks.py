@@ -4,6 +4,7 @@ from app.services.database_service import Base
 from sqlalchemy import Column, String, Integer, Text, TIMESTAMP, ForeignKey
 import uuid
 from typing import Optional, Any
+from datetime import datetime
 
 
 class task(BaseModel):
@@ -12,10 +13,10 @@ class task(BaseModel):
     id: Optional[uuid.UUID] = None
     task_name: str
     team_id: uuid.UUID
-    deadline: Optional[str] = None
+    deadline: Optional[datetime] = None
     points: Optional[int] = None
-    date_of_completion: Optional[str] = None
-    date_of_creation: str = None
+    date_of_completion: Optional[datetime] = None
+    date_of_creation: datetime = None
     description: Optional[str] = None
     notes: Optional[str] = None
     task_data: Optional[Any] = None
