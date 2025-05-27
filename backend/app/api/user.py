@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 import uuid
@@ -47,8 +47,8 @@ async def update_user(request: UpdateUserRequest, db: AsyncSession = Depends(get
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/get_user_by_username", response_model=user)
-async def get_user_by_username(username: str, db: AsyncSession = Depends(get_db)):
+@router.get("/get_user_by_username", response_model=user)
+async def get_user_by_username(username: str = Query(...), db: AsyncSession = Depends(get_db)):
     try:
         result = await user_repository.get_by_username(db, username)
         if result is None:

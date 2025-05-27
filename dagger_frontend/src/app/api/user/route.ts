@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateUserUserPost, getUserByUsernameUserGetUserByUsernamePost } from '@/client/sdk.gen';
+import { updateUserUserPost, getUserByUsernameUserGetUserByUsernameGet } from '@/client/sdk.gen';
 import type { UpdateUserRequest } from '@/client/types.gen';
 
 export async function POST(req: NextRequest) {
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     if (!username) {
       return NextResponse.json({ error: 'Username is required' }, { status: 400 });
     }
-    const response = await getUserByUsernameUserGetUserByUsernamePost({
+    const response = await getUserByUsernameUserGetUserByUsernameGet({
       query: { username },
     });
     if (!response) {

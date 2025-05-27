@@ -210,7 +210,7 @@ export type UpdateUserUserPostResponses = {
 
 export type UpdateUserUserPostResponse = UpdateUserUserPostResponses[keyof UpdateUserUserPostResponses];
 
-export type GetUserByUsernameUserGetUserByUsernamePostData = {
+export type GetUserByUsernameUserGetUserByUsernameGetData = {
     body?: never;
     path?: never;
     query: {
@@ -219,23 +219,23 @@ export type GetUserByUsernameUserGetUserByUsernamePostData = {
     url: '/user/get_user_by_username';
 };
 
-export type GetUserByUsernameUserGetUserByUsernamePostErrors = {
+export type GetUserByUsernameUserGetUserByUsernameGetErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type GetUserByUsernameUserGetUserByUsernamePostError = GetUserByUsernameUserGetUserByUsernamePostErrors[keyof GetUserByUsernameUserGetUserByUsernamePostErrors];
+export type GetUserByUsernameUserGetUserByUsernameGetError = GetUserByUsernameUserGetUserByUsernameGetErrors[keyof GetUserByUsernameUserGetUserByUsernameGetErrors];
 
-export type GetUserByUsernameUserGetUserByUsernamePostResponses = {
+export type GetUserByUsernameUserGetUserByUsernameGetResponses = {
     /**
      * Successful Response
      */
     200: User;
 };
 
-export type GetUserByUsernameUserGetUserByUsernamePostResponse = GetUserByUsernameUserGetUserByUsernamePostResponses[keyof GetUserByUsernameUserGetUserByUsernamePostResponses];
+export type GetUserByUsernameUserGetUserByUsernameGetResponse = GetUserByUsernameUserGetUserByUsernameGetResponses[keyof GetUserByUsernameUserGetUserByUsernameGetResponses];
 
 export type GetUsersByTeamUserByTeamGetData = {
     body?: never;

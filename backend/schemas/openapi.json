@@ -48,12 +48,12 @@
       }
     },
     "/user/get_user_by_username": {
-      "post": {
+      "get": {
         "tags": [
           "user"
         ],
         "summary": "Get User By Username",
-        "operationId": "get_user_by_username_user_get_user_by_username_post",
+        "operationId": "get_user_by_username_user_get_user_by_username_get",
         "parameters": [
           {
             "name": "username",

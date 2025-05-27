@@ -11,7 +11,7 @@ export interface paths {
   };
   "/user/get_user_by_username": {
     /** Get User By Username */
-    post: operations["get_user_by_username_user_get_user_by_username_post"];
+    get: operations["get_user_by_username_user_get_user_by_username_get"];
   };
   "/user/by_team": {
     /** Get Users By Team */
@@ -407,7 +407,7 @@ export interface operations {
     };
   };
   /** Get User By Username */
-  get_user_by_username_user_get_user_by_username_post: {
+  get_user_by_username_user_get_user_by_username_get: {
     parameters: {
       query: {
         username: string;
