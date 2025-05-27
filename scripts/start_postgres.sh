@@ -73,7 +73,3 @@ if [ -f "db/example_data/init_dag.sql" ]; then
   docker exec -u $POSTGRES_USER $CONTAINER_NAME psql -d $POSTGRES_DB -f /tmp/init_dag.sql
 fi
 
-if [ -f "db/example_data/init_week.sql" ]; then
-  docker cp db/example_data/init_week.sql $CONTAINER_NAME:/tmp/
-  docker exec -u $POSTGRES_USER $CONTAINER_NAME psql -d $POSTGRES_DB -f /tmp/init_week.sql
-fi
