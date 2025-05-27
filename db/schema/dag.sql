@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS dag (
-  dag_id UUID PRIMARY KEY,
+  dag_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
   dag_graph JSONB NOT NULL
 ); 

@@ -11,10 +11,6 @@ from typing import Optional, List
 from app.core.logger import logger
 import uuid
 
-router = APIRouter(prefix="/dag", tags=["dag"])
-dag_repository = DagRepository()
-tasks_repository = TasksRepository()
-
 
 class DagAction(str, Enum):
     create = "create"
@@ -23,54 +19,86 @@ class DagAction(str, Enum):
 
 
 class DagRequest(BaseModel):
-    dag_id: uuid.UUID
+    dag_id: Optional[uuid.UUID] = None
     first_task_id: uuid.UUID
     second_task_id: uuid.UUID = None
+    team_id: uuid.UUID
     action: DagAction
 
 
-@router.post("/", response_model=DagModel, status_code=200)
+class DagResponse(BaseModel):
+    success: bool
+    message: str
+    dag_id: Optional[uuid.UUID] = None
+    new_dag_id: Optional[uuid.UUID] = None
+
+
+router = APIRouter(prefix="/dag", tags=["dag"])
+dag_repository = DagRepository()
+tasks_repository = TasksRepository()
+
+
+@router.post("/", response_model=DagResponse, status_code=200)
 async def dag_action(request: DagRequest, db: AsyncSession = Depends(get_db)):
     try:
         if request.action == DagAction.create:
             if request.first_task_id and request.second_task_id:
-                await dag_repository.create_dag(
-                    db, request.dag_id, request.first_task_id, request.second_task_id
+                dag = await dag_repository.create_dag(
+                    db, request.first_task_id, request.second_task_id, request.team_id
+                )
+                return DagResponse(
+                    success=True,
+                    message="DAG created successfully",
+                    dag_id=dag.dag_id
                 )
             else:
                 raise HTTPException(
                     status_code=400,
                     detail="first_task_id and second_task_id required for create",
                 )
-            logger.info(f"DAG {request.dag_id} created via API")
         elif request.action == DagAction.add_edge:
+            if not request.dag_id:
+                raise HTTPException(status_code=400, detail="dag_id required for add_edge")
             if not request.second_task_id:
                 raise HTTPException(
                     status_code=400, detail="second_task_id required for add_edge"
                 )
-            await dag_repository.add_edge(
+            result = await dag_repository.add_edge(
                 db, request.dag_id, request.first_task_id, request.second_task_id
             )
+            return DagResponse(
+                success=True,
+                message="Edge added successfully",
+                dag_id=result.dag_id,
+                new_dag_id=result.new_dag_id
+            )
         elif request.action == DagAction.delete_edge:
+            if not request.dag_id:
+                raise HTTPException(status_code=400, detail="dag_id required for delete_edge")
             if not request.second_task_id:
                 raise HTTPException(
                     status_code=400, detail="second_task_id required for delete_edge"
                 )
-            await dag_repository.delete_edge(
+            result = await dag_repository.delete_edge(
                 db, request.dag_id, request.first_task_id, request.second_task_id
+            )
+            return DagResponse(
+                success=True,
+                message="Edge deleted successfully",
+                dag_id=result.dag_id,
+                new_dag_id=result.new_dag_id
             )
         else:
             raise HTTPException(status_code=400, detail="Invalid action")
-        return await dag_repository.get_full_dag(db, request.dag_id)
     except Exception as e:
         logger.error(f"DAG API error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return DagResponse(success=False, message=str(e))
 
 
-@router.get("/by_team", response_model=List[DagModel])
-async def get_dags_by_team(team_id: str, db: AsyncSession = Depends(get_db)):
+@router.get("/", response_model=List[DagModel])
+async def get_all_dags(db: AsyncSession = Depends(get_db)):
     try:
-        return await dag_repository.get_dags_by_team(db, team_id)
+        return await dag_repository.get_all_dags(db)
     except Exception as e:
-        logger.error(f"Error in get_dags_by_team: {e}")
+        logger.error(f"Error in get_all_dags: {e}")
         raise HTTPException(status_code=500, detail=str(e))

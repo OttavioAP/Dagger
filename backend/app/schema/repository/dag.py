@@ -1,9 +1,9 @@
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from app.services.database_service import Base
-from sqlalchemy import Column, ForeignKey
+from sqlalchemy import Column, ForeignKey, text
 import uuid
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from app.schema.repository.tasks import task
 from sqlalchemy import String
 
@@ -16,7 +16,7 @@ class DagAdjacencyList(BaseModel):
 class dag(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    dag_id: uuid.UUID
+    dag_id: Optional[uuid.UUID] = None
     team_id: uuid.UUID
     dag_graph: Dict[uuid.UUID, List[uuid.UUID]]
 
@@ -32,8 +32,8 @@ class dag(BaseModel):
 class DagSchema(Base):
     __tablename__ = "dag"
 
-    dag_id = Column(UUID(as_uuid=True), primary_key=True)
+    dag_id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
     team_id = Column(
         UUID(as_uuid=True), ForeignKey("teams.id", ondelete="CASCADE"), nullable=False
     )
-    dag_graph = Column(String, nullable=False)  # Store as JSON string
+    dag_graph = Column(JSONB, nullable=False)  # Store as JSON string

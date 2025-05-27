@@ -31,17 +31,24 @@ class TasksRepository(BaseRepository[TaskSchema]):
             # If no valid updates, return current task
             return await self.get_by_id(db, task_id)
             
+        # First check if task exists
+        existing_task = await self.get_by_id(db, task_id)
+        if not existing_task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        # Update the task
         result = await db.execute(
             update(TaskSchema)
             .where(TaskSchema.id == task_id)
             .values(**updates)
             .returning(TaskSchema)
         )
-        db_task = result.fetchone()
-        if not db_task:
+        updated_task = result.scalar_one_or_none()
+        if not updated_task:
             raise HTTPException(status_code=404, detail="Task not found")
+        
         await db.commit()
-        return task.from_orm(db_task)
+        return task.from_orm(updated_task)
 
     async def delete_task(self, db: AsyncSession, task_id: uuid.UUID):
         result = await db.execute(
@@ -59,15 +66,6 @@ class TasksRepository(BaseRepository[TaskSchema]):
         if not db_task:
             raise HTTPException(status_code=404, detail="Task not found")
         return task.from_orm(db_task)
-
-    async def get_all_tasks_by_team(
-        self, db: AsyncSession, team_id: uuid.UUID
-    ) -> list[task]:
-        result = await db.execute(
-            select(TaskSchema).where(TaskSchema.team_id == team_id)
-        )
-        db_tasks = result.scalars().all()
-        return [task.from_orm(t) for t in db_tasks]
 
     async def get_tasks_by_ids(
         self, db: AsyncSession, task_ids: list

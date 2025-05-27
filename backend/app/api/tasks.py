@@ -80,10 +80,10 @@ async def task_post(request: TaskRequest, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{team_id}", response_model=list[task])
-async def get_all_tasks_by_team(team_id: UUID, db: AsyncSession = Depends(get_db)):
+@router.get("/", response_model=list[task])
+async def get_all_tasks(db: AsyncSession = Depends(get_db)):
     try:
         tasks_repository = TasksRepository()
-        return await tasks_repository.get_all_tasks_by_team(db, team_id)
+        return await tasks_repository.get_all(db)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
