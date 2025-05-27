@@ -9,7 +9,7 @@ if [ ! "$(docker ps -q -f name=$CONTAINER_NAME)" ]; then
         # cleanup
         docker rm $CONTAINER_NAME
     fi
-    docker run --name $CONTAINER_NAME -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD -e POSTGRES_USER=$POSTGRES_USER -e POSTGRES_DB=$POSTGRES_DB -p $POSTGRES_PORT:5432 -d postgres:15
+    docker run --name $CONTAINER_NAME -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD -e POSTGRES_USER=$POSTGRES_USER -e POSTGRES_DB=$POSTGRES_DB -p $POSTGRES_PORT:5432 -d ankane/pgvector:latest
 fi
 
 # Wait for Postgres to be ready
@@ -27,6 +27,8 @@ SCHEMA_PATH_USER_TASKS="/tmp/user_tasks.sql"
 SCHEMA_PATH_DAG="/tmp/dag.sql"
 SCHEMA_PATH_WEEK="/tmp/week.sql"
 
+# Create vector extension first
+docker exec -u $POSTGRES_USER $CONTAINER_NAME psql -d $POSTGRES_DB -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
 docker cp db/schema/team.sql $CONTAINER_NAME:$SCHEMA_PATH_TEAM
 docker exec -u $POSTGRES_USER $CONTAINER_NAME psql -d $POSTGRES_DB -f $SCHEMA_PATH_TEAM

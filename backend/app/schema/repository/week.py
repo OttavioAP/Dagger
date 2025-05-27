@@ -3,8 +3,9 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 from app.services.database_service import Base
 from sqlalchemy import Column, String, Integer, Text, TIMESTAMP, ForeignKey
 import uuid
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime
+from pgvector.sqlalchemy import Vector
 
 
 class week(BaseModel):
@@ -52,3 +53,4 @@ class WeekSchema(Base):
     missed_deadlines = Column(ARRAY(UUID(as_uuid=True)), nullable=True)
     completed_tasks = Column(ARRAY(UUID(as_uuid=True)), nullable=True)
     points_completed = Column(Integer, nullable=True)
+    embedding = Column(Vector(1536), nullable=True)

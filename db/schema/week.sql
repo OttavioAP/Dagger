@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS vector;
+
 CREATE TABLE IF NOT EXISTS week (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     start_date TIMESTAMP NOT NULL,
@@ -8,5 +10,6 @@ CREATE TABLE IF NOT EXISTS week (
     collaborators UUID[],
     missed_deadlines UUID[],
     completed_tasks UUID[],
-    points_completed INT
+    points_completed INT,
+    embedding vector(1536)
 );

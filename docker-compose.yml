@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   db:
-    image: postgres:15
+    image: ankane/pgvector:latest
     container_name: my_postgres
     restart: unless-stopped
     environment:
@@ -17,8 +17,8 @@ services:
       - ./db/schema/user.sql:/docker-entrypoint-initdb.d/02_user.sql:ro
       - ./db/schema/tasks.sql:/docker-entrypoint-initdb.d/04_tasks.sql:ro
       - ./db/schema/user_tasks.sql:/docker-entrypoint-initdb.d/05_user_tasks.sql:ro
-      - ./db/schema/dag.sql:/docker-entrypoint-initdb.d/07_dag.sql:ro
       - ./db/schema/week.sql:/docker-entrypoint-initdb.d/06_week.sql:ro
+      - ./db/schema/dag.sql:/docker-entrypoint-initdb.d/07_dag.sql:ro
       # Data files (order matters)
       - ./db/example_data/init_teams.sql:/docker-entrypoint-initdb.d/11_init_teams.sql:ro
       - ./db/example_data/init_users.sql:/docker-entrypoint-initdb.d/12_init_users.sql:ro

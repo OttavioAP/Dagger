@@ -1,12 +1,18 @@
 FROM python:3.11-slim
 
-# Install Docker
+# Install Docker and required system packages
 RUN apt-get update && apt-get install -y \
     docker.io \
+    build-essential \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set workdir
 WORKDIR /app
+
+# Copy requirements first to leverage Docker cache
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy schema and script
 COPY db/schema/user.sql /app/db/schema/user.sql
