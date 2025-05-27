@@ -17,6 +17,7 @@ class task_action(str, Enum):
     create = "create"
     edit = "edit"
     delete = "delete"
+    complete = "complete"
 
 
 class TaskRequest(BaseModel):
@@ -24,7 +25,6 @@ class TaskRequest(BaseModel):
     task_name: str | None = None
     team_id: uuid.UUID | None = None
     deadline: datetime | None = None
-    date_of_completion: datetime | None = None
     points: int | None = None
     priority: TaskPriority | None = TaskPriority.LOW
     focus: TaskFocus | None = TaskFocus.LOW
@@ -53,8 +53,7 @@ async def task_post(request: TaskRequest, db: AsyncSession = Depends(get_db)):
                 "priority": request.priority or TaskPriority.LOW,
                 "focus": request.focus or TaskFocus.LOW,
                 "description": request.description,
-                "notes": request.notes,
-                "date_of_completion": request.date_of_completion
+                "notes": request.notes
             }
             return await tasks_repository.create_task(db, task_data)
             
@@ -75,6 +74,20 @@ async def task_post(request: TaskRequest, db: AsyncSession = Depends(get_db)):
             if not request.task_id:
                 raise HTTPException(status_code=400, detail="task_id is required for delete")
             return await tasks_repository.delete_task(db, request.task_id)
+
+        elif request.action == task_action.complete:
+            # For complete, we need task_id
+            if not request.task_id:
+                raise HTTPException(status_code=400, detail="task_id is required for complete")
+            
+            # Create updates dict with non-None fields and add current timestamp
+            updates = {
+                k: v for k, v in request.model_dump().items() 
+                if v is not None and k not in ['action', 'task_id']
+            }
+            updates['date_of_completion'] = datetime.now()
+            
+            return await tasks_repository.edit_task(db, request.task_id, updates)
             
     except HTTPException as e:
         raise e

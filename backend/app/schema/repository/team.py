@@ -6,10 +6,19 @@ import uuid
 
 
 class team(BaseModel):
+    """A team represents a group of users working together on tasks.
+    
+    Teams are the organizational units that contain users and tasks. Each team has a unique name
+    and can have multiple users as members. Teams provide the context for task collaboration
+    and project management.
+    """
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     team_name: str
+    """The unique name of the team. Used for identification and display purposes."""
+
     id: uuid.UUID
+    """Unique identifier for the team. Generated automatically when the team is created."""
 
     @classmethod
     def from_orm(cls, obj):

@@ -20,19 +20,55 @@ class TaskFocus(str, Enum):
     HIGH = "high"
 
 class task(BaseModel):
+    """A task represents a unit of work assigned to a team.
+    
+    Tasks are the fundamental building blocks of project management, containing information about
+    what needs to be done, when it needs to be done, and how important it is. Each task belongs
+    to a team and can be worked on by team members.
+    """
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     id: Optional[uuid.UUID] = None
+    """Unique identifier for the task. Generated automatically if not provided."""
+
     task_name: str
+    """The name/title of the task. Should be concise but descriptive."""
+
     team_id: uuid.UUID
+    """The ID of the team this task belongs to. All collaborators must be members of this team."""
+
     priority: TaskPriority = TaskPriority.LOW
+    """The urgency level of the task. Can be:
+    - LOW: Not urgent, can be done when convenient
+    - MEDIUM: Important but not critical
+    - HIGH: Urgent, should be addressed soon
+    - EMERGENCY: Critical, needs immediate attention"""
+
     focus: TaskFocus = TaskFocus.LOW
+    """The level of concentration required to complete the task. Can be:
+    - LOW: Can be done with minimal focus, possibly alongside other tasks
+    - MEDIUM: Requires moderate focus and attention
+    - HIGH: Requires deep focus and should be done without distractions"""
+
     deadline: Optional[datetime] = None
+    """The date and time by which the task should be completed. Optional."""
+
     points: Optional[int] = None
+    """Optional point value assigned to the task, typically used for effort estimation or scoring."""
+
     date_of_completion: Optional[datetime] = None
+    """The date and time when the task was marked as completed. Null if task is still pending."""
+
     date_of_creation: datetime = None
+    """The date and time when the task was created. Automatically set to current timestamp."""
+
     description: Optional[str] = None
+    """Detailed description of the task written by the project manager.
+    Should include requirements, objectives, and any other relevant information."""
+
     notes: Optional[str] = None
+    """Additional notes and comments from team members working on the task.
+    Can include progress updates, questions, or other relevant information from collaborators."""
 
     @classmethod
     def from_orm(cls, obj):

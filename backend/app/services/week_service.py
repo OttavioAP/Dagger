@@ -5,6 +5,8 @@ from app.schema.repository.week import week
 import uuid
 
 
+
+
 async def analyze_and_create_week(db, start_of_week, end_of_week, user_id):
     tasks_repo = TasksRepository()
     user_tasks_repo = UserTasksRepository()
