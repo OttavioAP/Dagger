@@ -39,7 +39,6 @@ export type TaskRequest = {
     task_name?: string | null;
     team_id?: string | null;
     deadline?: string | null;
-    date_of_completion?: string | null;
     points?: number | null;
     priority?: TaskPriority | null;
     focus?: TaskFocus | null;
@@ -68,6 +67,37 @@ export type ValidationError = {
     type: string;
 };
 
+export type WeekRequest = {
+    request_type: WeekRequestType;
+    query?: string | null;
+    week_id?: string | null;
+    number_of_weeks: number;
+    start_date?: string | null;
+    end_date?: string | null;
+    user_id?: string | null;
+    team_id?: string | null;
+    collaborators?: Array<string> | null;
+    missed_deadlines_range?: [
+        number,
+        number
+    ] | null;
+    completed_task_range?: [
+        number,
+        number
+    ] | null;
+    points_range?: [
+        number,
+        number
+    ] | null;
+};
+
+export type WeekRequestType = 'search_query' | 'compare_weeks' | 'get_weeks';
+
+export type WeekResponse = {
+    weeks: Array<Week>;
+    total_count: number;
+};
+
 export type Dag = {
     dag_id?: string | null;
     team_id: string;
@@ -78,6 +108,13 @@ export type Dag = {
 
 export type Option = 'add' | 'delete';
 
+/**
+ * A task represents a unit of work assigned to a team.
+ *
+ * Tasks are the fundamental building blocks of project management, containing information about
+ * what needs to be done, when it needs to be done, and how important it is. Each task belongs
+ * to a team and can be worked on by team members.
+ */
 export type Task = {
     id?: string | null;
     task_name: string;
@@ -92,13 +129,27 @@ export type Task = {
     notes?: string | null;
 };
 
-export type TaskAction = 'create' | 'edit' | 'delete';
+export type TaskAction = 'create' | 'edit' | 'delete' | 'complete';
 
+/**
+ * A team represents a group of users working together on tasks.
+ *
+ * Teams are the organizational units that contain users and tasks. Each team has a unique name
+ * and can have multiple users as members. Teams provide the context for task collaboration
+ * and project management.
+ */
 export type Team = {
     team_name: string;
     id: string;
 };
 
+/**
+ * A user represents a team member in the system.
+ *
+ * Users are the individual participants who work on tasks within teams. Each user must belong
+ * to exactly one team, and can collaborate on tasks within that team. Users are identified
+ * by their unique username and UUID.
+ */
 export type User = {
     username: string;
     team_id: string;
@@ -111,16 +162,50 @@ export type UserTasks = {
     assigned_at?: string | null;
 };
 
+/**
+ * A model representing a weekly summary of a user's productivity and accomplishments.
+ *
+ * This model captures a week's worth of work activity, including tasks completed,
+ * collaboration metrics, and AI-generated feedback to improve productivity.
+ * Each week spans from start_date to end_date (7 days later).
+ */
 export type Week = {
     id?: string | null;
+    /**
+     * The start date of the week
+     */
     start_date: string;
+    /**
+     * The end date of the week (7 days after start_date)
+     */
     end_date: string;
+    /**
+     * The ID of the user whose productivity is being summarized
+     */
     user_id: string;
+    /**
+     * AI-generated summary of the week's work and productivity patterns
+     */
     summary?: string | null;
+    /**
+     * AI-generated feedback aimed at improving worker productivity
+     */
     feedback?: string | null;
+    /**
+     * List of user IDs who were assigned roles on tasks during this week
+     */
     collaborators?: Array<string> | null;
+    /**
+     * List of task IDs where deadlines were missed during this week
+     */
     missed_deadlines?: Array<string> | null;
+    /**
+     * List of task IDs that were completed during this week
+     */
     completed_tasks?: Array<string> | null;
+    /**
+     * Total points completed, where points represent estimated hours of work
+     */
     points_completed?: number | null;
 };
 
@@ -394,33 +479,30 @@ export type ModifyUserTaskUserTasksPostResponses = {
 
 export type ModifyUserTaskUserTasksPostResponse = ModifyUserTaskUserTasksPostResponses[keyof ModifyUserTaskUserTasksPostResponses];
 
-export type GetWeeksWeekGetData = {
-    body?: never;
+export type GetWeeksWeekPostData = {
+    body: WeekRequest;
     path?: never;
-    query?: {
-        user_id?: string | null;
-        team_id?: string | null;
-    };
+    query?: never;
     url: '/week/';
 };
 
-export type GetWeeksWeekGetErrors = {
+export type GetWeeksWeekPostErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type GetWeeksWeekGetError = GetWeeksWeekGetErrors[keyof GetWeeksWeekGetErrors];
+export type GetWeeksWeekPostError = GetWeeksWeekPostErrors[keyof GetWeeksWeekPostErrors];
 
-export type GetWeeksWeekGetResponses = {
+export type GetWeeksWeekPostResponses = {
     /**
      * Successful Response
      */
-    200: Array<Week>;
+    200: WeekResponse;
 };
 
-export type GetWeeksWeekGetResponse = GetWeeksWeekGetResponses[keyof GetWeeksWeekGetResponses];
+export type GetWeeksWeekPostResponse = GetWeeksWeekPostResponses[keyof GetWeeksWeekPostResponses];
 
 export type AgenticSearchAgenticSearchGetData = {
     body?: never;
