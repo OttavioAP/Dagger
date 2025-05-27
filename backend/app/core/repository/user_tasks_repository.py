@@ -11,8 +11,13 @@ class UserTasksRepository(BaseRepository[UserTasksSchema]):
         super().__init__(UserTasksSchema)
 
     async def add_user_task(self, db, user_task: user_tasks) -> user_tasks:
-        user_task_data = user_task.model_dump()
-        return await self.create(db, **user_task_data)
+        # Create the instance directly
+        instance = UserTasksSchema(**user_task.model_dump())
+        db.add(instance)
+        await db.commit()
+        await db.refresh(instance)
+        return user_tasks.from_orm(instance)
+
 
     async def delete_user_task(self, db, user_id: str, task_id: str) -> None:
         await self.delete(db, user_id, task_id)

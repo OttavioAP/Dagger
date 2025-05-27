@@ -4,14 +4,18 @@ from app.schema.repository.tasks import TaskSchema, task
 from app.core.repository.base_repository import BaseRepository
 from fastapi import HTTPException
 import uuid
+from datetime import datetime
 
 
 class TasksRepository(BaseRepository[TaskSchema]):
     def __init__(self):
         super().__init__(TaskSchema)
 
-    async def create_task(self, db: AsyncSession, task: task) -> task:
-        db_task = TaskSchema(**task.model_dump())
+    async def create_task(self, db: AsyncSession, task_data: dict) -> task:
+        # Remove setting date_of_creation; let DB handle default
+        if 'date_of_creation' in task_data:
+            del task_data['date_of_creation']
+        db_task = TaskSchema(**task_data)
         db.add(db_task)
         await db.commit()
         await db.refresh(db_task)
@@ -20,6 +24,13 @@ class TasksRepository(BaseRepository[TaskSchema]):
     async def edit_task(
         self, db: AsyncSession, task_id: uuid.UUID, updates: dict
     ) -> task:
+        # Remove None values from updates
+        updates = {k: v for k, v in updates.items() if v is not None}
+        
+        if not updates:
+            # If no valid updates, return current task
+            return await self.get_by_id(db, task_id)
+            
         result = await db.execute(
             update(TaskSchema)
             .where(TaskSchema.id == task_id)

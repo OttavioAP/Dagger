@@ -57,7 +57,13 @@ class UserRepository(BaseRepository[UserSchema]):
         return updated_user
 
     async def delete_user(self, db, user_id: str) -> user:
-        return await self.delete(db, id=user_id)
+        # Get the user first
+        user_obj = await self.get_user(db, user_id)
+        if not user_obj:
+            raise HTTPException(status_code=404, detail="User not found")
+        # Delete the user
+        await self.delete(db, id=user_id)
+        return user_obj
 
     async def get_all_users(self, db) -> List[user]:
         return await self.get_all(db)

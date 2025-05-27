@@ -33,3 +33,12 @@ class UserTasksSchema(Base):
         UUID(as_uuid=True), ForeignKey("tasks.id", ondelete="CASCADE"), primary_key=True
     )
     assigned_at = Column(TIMESTAMP(timezone=True), nullable=True)
+
+    async def add_user_task(self, db, user_task: user_tasks) -> user_tasks:
+        # Create the instance directly
+        instance = UserTasksSchema(**user_task.model_dump())
+        db.add(instance)
+        await db.commit()
+        await db.refresh(instance)
+        return user_tasks.from_orm(instance)
+

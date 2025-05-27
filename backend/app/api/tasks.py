@@ -8,9 +8,9 @@ from pydantic import BaseModel
 from typing import Optional, Any
 from uuid import UUID
 from enum import Enum
-
+from datetime import datetime
+from app.core.logger import logger
 router = APIRouter(prefix="/tasks", tags=["tasks"])
-tasks_repository = TasksRepository()
 
 
 class task_action(str, Enum):
@@ -20,20 +20,62 @@ class task_action(str, Enum):
 
 
 class TaskRequest(BaseModel):
-    task: task
+    task_id: uuid.UUID | None = None
+    task_name: str | None = None
+    team_id: uuid.UUID | None = None
+    deadline: datetime | None = None
+    date_of_completion: datetime | None = None
+    points: int | None = None
+    priority: int | None = 0  # Default to 0 if not provided
+    description: str | None = None
+    notes: str | None = None
     action: task_action
 
 
 @router.post("/", response_model=task, status_code=201)
-async def task_action(request: TaskRequest, db: AsyncSession = Depends(get_db)):
+async def task_post(request: TaskRequest, db: AsyncSession = Depends(get_db)):
     try:
-        # conditionally create, edit, or delete task
+        tasks_repository = TasksRepository()
+        logger.info(f"Received request: {request}")
+        
         if request.action == task_action.create:
-            return await tasks_repository.create_task(db, request.task)
+            # For create, we need task_name and team_id
+            if not request.task_name or not request.team_id:
+                raise HTTPException(status_code=400, detail="task_name and team_id are required for create")
+            
+            # Create task object with provided fields
+            task_data = {
+                "task_name": request.task_name,
+                "team_id": request.team_id,
+                "deadline": request.deadline,
+                "points": request.points,
+                "priority": request.priority or 0,  # Ensure priority is set
+                "description": request.description,
+                "notes": request.notes,
+                "date_of_completion": request.date_of_completion
+            }
+            return await tasks_repository.create_task(db, task_data)
+            
         elif request.action == task_action.edit:
-            return await tasks_repository.edit_task(db, request.task)
+            # For edit, we need task_id
+            if not request.task_id:
+                raise HTTPException(status_code=400, detail="task_id is required for edit")
+            
+            # Create updates dict with non-None fields
+            updates = {
+                k: v for k, v in request.model_dump().items() 
+                if v is not None and k not in ['action', 'task_id']
+            }
+            return await tasks_repository.edit_task(db, request.task_id, updates)
+            
         elif request.action == task_action.delete:
-            return await tasks_repository.delete_task(db, request.task.id)
+            # For delete, we only need task_id
+            if not request.task_id:
+                raise HTTPException(status_code=400, detail="task_id is required for delete")
+            return await tasks_repository.delete_task(db, request.task_id)
+            
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -41,6 +83,7 @@ async def task_action(request: TaskRequest, db: AsyncSession = Depends(get_db)):
 @router.get("/{team_id}", response_model=list[task])
 async def get_all_tasks_by_team(team_id: UUID, db: AsyncSession = Depends(get_db)):
     try:
+        tasks_repository = TasksRepository()
         return await tasks_repository.get_all_tasks_by_team(db, team_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

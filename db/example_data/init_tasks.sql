@@ -1,3 +1,3 @@
-INSERT INTO tasks (id, task_name, deadline, team_id, points, date_of_completion, description, notes, task_data) VALUES
-  ('11111111-1111-1111-1111-111111111111', 'Design Database Schema', '2025-06-01T12:00:00Z', '7fa85f64-5717-4562-b3fc-2c963f66afc2', 10, NULL, 'Design the initial database schema for the project.', 'Focus on normalization and future extensibility.', '{"priority": "high", "tags": ["db", "design"]}'),
-  ('22222222-2222-2222-2222-222222222222', 'Implement API Endpoints', '2025-06-10T17:00:00Z', '7fa85f64-5717-4562-b3fc-2c963f66afc2', 15, NULL, 'Develop RESTful API endpoints for tasks and users.', 'Follow OpenAPI spec.', '{"priority": "medium", "tags": ["api", "backend"]}');
+INSERT INTO tasks (id, task_name, deadline, team_id, points, priority, date_of_completion, date_of_creation, description, notes) VALUES
+  ('11111111-1111-1111-1111-111111111111', 'Design Database Schema', '2025-06-01T12:00:00Z', '7fa85f64-5717-4562-b3fc-2c963f66afc2', 10, 1, NULL, '2025-05-26T00:00:00Z', 'Design the initial database schema for the project.', 'Focus on normalization and future extensibility'),
+  ('22222222-2222-2222-2222-222222222222', 'Implement API Endpoints', '2025-06-10T17:00:00Z', '7fa85f64-5717-4562-b3fc-2c963f66afc2', 15, 2,NULL, '2025-05-26T00:00:00Z', 'Develop RESTful API endpoints for tasks and users.', 'Follow OpenAPI spec.');

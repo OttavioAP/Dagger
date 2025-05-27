@@ -7,7 +7,7 @@ from app.core.repository.user_repository import UserRepository
 from app.schema.repository.user import user
 from pydantic import BaseModel
 from enum import Enum
-
+from typing import Optional
 router = APIRouter(prefix="/user", tags=["user"])
 user_repository = UserRepository()
 
@@ -19,7 +19,8 @@ class UpdateUserOption(Enum):
 
 
 class UpdateUserRequest(BaseModel):
-    user: user
+    user_id: uuid.UUID
+    team_id: Optional[uuid.UUID] = None
     action: UpdateUserOption
 
 
@@ -27,11 +28,18 @@ class UpdateUserRequest(BaseModel):
 async def update_user(request: UpdateUserRequest, db: AsyncSession = Depends(get_db)):
     try:
         if request.action == UpdateUserOption.CREATE:
-            return await user_repository.create_user(db, request.user)
+            # For create, we need to create a new user with the provided ID and team_id
+            new_user = user(id=request.user_id, team_id=request.team_id)
+            return await user_repository.create_user(db, new_user)
         elif request.action == UpdateUserOption.UPDATE:
-            return await user_repository.update_user(db, request.user)
+            # For update, we need to get the existing user and update its team_id
+            existing_user = await user_repository.get_user(db, str(request.user_id))
+            if not existing_user:
+                raise HTTPException(status_code=404, detail="User not found")
+            existing_user.team_id = request.team_id
+            return await user_repository.update_user(db, existing_user)
         elif request.action == UpdateUserOption.DELETE:
-            return await user_repository.delete_user(db, request.user)
+            return await user_repository.delete_user(db, str(request.user_id))
         else:
             raise HTTPException(status_code=400, detail="Invalid action")
 
