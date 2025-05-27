@@ -1,6 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+from fastapi.openapi.utils import get_openapi
+from pathlib import Path
+import json
+from pydantic import BaseModel
+import inspect
+import importlib
+import pkgutil
 
 from app.core.logger import logger
 from app.api.user import router as user_router
@@ -55,6 +62,41 @@ async def shutdown_event():
 async def health_check():
     return {"status": "healthy"}
 
+@app.on_event("startup")
+async def export_schemas():
+    """Export OpenAPI schema and all Pydantic model schemas on startup."""
+    try:
+        schema_dir = Path(__file__).parent.parent / "schemas"
+        schema_dir.mkdir(parents=True, exist_ok=True)
+
+        # 1. Export OpenAPI schema
+        openapi_schema = get_openapi(
+            title=app.title,
+            version=app.version,
+            routes=app.routes,
+            description=app.description
+        )
+        with open(schema_dir / "openapi.json", "w") as f:
+            json.dump(openapi_schema, f, indent=2)
+        logger.info("Exported OpenAPI schema")
+
+        # 2. Export all Pydantic model schemas in app.schema
+        def discover_models(package_name: str):
+            package = importlib.import_module(package_name)
+            for _, modname, _ in pkgutil.walk_packages(package.__path__, prefix=package.__name__ + "."):
+                module = importlib.import_module(modname)
+                for name, obj in inspect.getmembers(module):
+                    if inspect.isclass(obj) and issubclass(obj, BaseModel) and obj is not BaseModel:
+                        yield obj
+
+        for model in discover_models("app.schema"):
+            with open(schema_dir / f"{model.__name__}.json", "w") as f:
+                json.dump(model.model_json_schema(), f, indent=2)
+            logger.info(f"Exported schema for {model.__name__}")
+
+    except Exception as e:
+        logger.error(f"Error exporting schemas: {str(e)}")
+        raise e
 
 if __name__ == "__main__":
     uvicorn.run(

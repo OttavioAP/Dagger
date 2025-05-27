@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { dagActionDagPost, getDagsByTeamDagByTeamGet } from '@/client/sdk.gen';
+import { dagActionDagPost, getAllDagsDagGet } from '@/client/sdk.gen';
 import type { DagRequest } from '@/client/types.gen';
 
 export async function POST(req: NextRequest) {
@@ -21,12 +21,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const team_id = searchParams.get('team_id');
-    if (!team_id) {
-      return NextResponse.json({ error: 'team_id is required' }, { status: 400 });
-    }
-    const response = await getDagsByTeamDagByTeamGet({ query: { team_id } });
+    const response = await getAllDagsDagGet();
     return NextResponse.json(response, { status: 200 });
   } catch (error: unknown) {
     const message =

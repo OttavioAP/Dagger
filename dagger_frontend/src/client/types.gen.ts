@@ -67,30 +67,6 @@ export type ValidationError = {
     type: string;
 };
 
-export type WeekRequest = {
-    request_type: WeekRequestType;
-    query?: string | null;
-    week_id?: string | null;
-    number_of_weeks: number;
-    start_date?: string | null;
-    end_date?: string | null;
-    user_id?: string | null;
-    team_id?: string | null;
-    collaborators?: Array<string> | null;
-    missed_deadlines_range?: [
-        number,
-        number
-    ] | null;
-    completed_task_range?: [
-        number,
-        number
-    ] | null;
-    points_range?: [
-        number,
-        number
-    ] | null;
-};
-
 export type WeekRequestType = 'search_query' | 'compare_weeks' | 'get_weeks';
 
 export type WeekResponse = {
@@ -479,30 +455,52 @@ export type ModifyUserTaskUserTasksPostResponses = {
 
 export type ModifyUserTaskUserTasksPostResponse = ModifyUserTaskUserTasksPostResponses[keyof ModifyUserTaskUserTasksPostResponses];
 
-export type GetWeeksWeekPostData = {
-    body: WeekRequest;
+export type GetWeeksWeekGetData = {
+    body?: never;
     path?: never;
-    query?: never;
+    query: {
+        request_type: WeekRequestType;
+        query?: string | null;
+        week_id?: string | null;
+        number_of_weeks: number;
+        start_date?: string | null;
+        end_date?: string | null;
+        user_id?: string | null;
+        team_id?: string | null;
+        collaborators?: Array<string> | null;
+        missed_deadlines_range?: [
+            number,
+            number
+        ] | null;
+        completed_task_range?: [
+            number,
+            number
+        ] | null;
+        points_range?: [
+            number,
+            number
+        ] | null;
+    };
     url: '/week/';
 };
 
-export type GetWeeksWeekPostErrors = {
+export type GetWeeksWeekGetErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type GetWeeksWeekPostError = GetWeeksWeekPostErrors[keyof GetWeeksWeekPostErrors];
+export type GetWeeksWeekGetError = GetWeeksWeekGetErrors[keyof GetWeeksWeekGetErrors];
 
-export type GetWeeksWeekPostResponses = {
+export type GetWeeksWeekGetResponses = {
     /**
      * Successful Response
      */
     200: WeekResponse;
 };
 
-export type GetWeeksWeekPostResponse = GetWeeksWeekPostResponses[keyof GetWeeksWeekPostResponses];
+export type GetWeeksWeekGetResponse = GetWeeksWeekGetResponses[keyof GetWeeksWeekGetResponses];
 
 export type AgenticSearchAgenticSearchGetData = {
     body?: never;

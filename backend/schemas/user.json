@@ -1,0 +1,26 @@
+{
+  "description": "A user represents a team member in the system.\n\nUsers are the individual participants who work on tasks within teams. Each user must belong\nto exactly one team, and can collaborate on tasks within that team. Users are identified\nby their unique username and UUID.",
+  "properties": {
+    "username": {
+      "title": "Username",
+      "type": "string"
+    },
+    "team_id": {
+      "format": "uuid",
+      "title": "Team Id",
+      "type": "string"
+    },
+    "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "username",
+    "team_id",
+    "id"
+  ],
+  "title": "user",
+  "type": "object"
+}

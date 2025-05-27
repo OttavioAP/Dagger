@@ -1,0 +1,20 @@
+{
+  "description": "A team represents a group of users working together on tasks.\n\nTeams are the organizational units that contain users and tasks. Each team has a unique name\nand can have multiple users as members. Teams provide the context for task collaboration\nand project management.",
+  "properties": {
+    "team_name": {
+      "title": "Team Name",
+      "type": "string"
+    },
+    "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "team_name",
+    "id"
+  ],
+  "title": "team",
+  "type": "object"
+}

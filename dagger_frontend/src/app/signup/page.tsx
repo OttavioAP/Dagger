@@ -5,27 +5,24 @@ import { useRouter } from "next/navigation";
 import { updateUserUserPost } from "@/client/sdk.gen";
 import type { UpdateUserRequest } from "@/client/types.gen";
 
-export default function SignupPage() {
+export default function Signup() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     try {
       const req: UpdateUserRequest = {
-        user: {
-          username,
-          id: "dummy-id-" + Math.random().toString(36).substring(2, 10),
-        },
-        action: "create",
+        user_id: "dummy-id-" + Math.random().toString(36).substring(2, 10),
+        action: "create"
       };
       await updateUserUserPost({ body: req });
-      router.push("/");
+      router.push("/login");
     } catch (err: unknown) {
       const message =
         typeof err === 'object' && err !== null && 'message' in err
@@ -38,34 +35,43 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 text-white px-4">
-      <form onSubmit={handleSignup} className="bg-white/5 rounded-xl p-8 shadow-lg w-full max-w-sm flex flex-col gap-6">
-        <h1 className="text-2xl font-bold mb-2 text-center">Sign Up</h1>
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={e => setUsername(e.target.value)}
-          required
-          className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <input
-          type="password"
-          placeholder="Password (for show)"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          required
-          className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-gradient-to-r from-blue-500 to-teal-400 hover:from-blue-600 hover:to-teal-500 text-white font-bold py-2 px-6 rounded-full shadow transition-all duration-200 disabled:opacity-50"
-        >
-          {loading ? "Signing up..." : "Sign Up"}
-        </button>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Sign up for your account
+          </h2>
+        </div>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <label htmlFor="username" className="sr-only">
+                Username
+              </label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <button
+              type="submit"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              {loading ? "Signing up..." : "Sign up"}
+            </button>
+          </div>
+        </form>
         {error && <div className="text-red-400 text-center">{error}</div>}
-      </form>
+      </div>
     </div>
   );
 }

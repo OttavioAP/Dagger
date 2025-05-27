@@ -1,0 +1,337 @@
+{
+  "$defs": {
+    "TaskFocus": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "TaskFocus",
+      "type": "string"
+    },
+    "TaskPriority": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "emergency"
+      ],
+      "title": "TaskPriority",
+      "type": "string"
+    },
+    "task": {
+      "description": "A task represents a unit of work assigned to a team.\n\nTasks are the fundamental building blocks of project management, containing information about\nwhat needs to be done, when it needs to be done, and how important it is. Each task belongs\nto a team and can be worked on by team members.",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        },
+        "task_name": {
+          "title": "Task Name",
+          "type": "string"
+        },
+        "team_id": {
+          "format": "uuid",
+          "title": "Team Id",
+          "type": "string"
+        },
+        "priority": {
+          "$ref": "#/$defs/TaskPriority",
+          "default": "low"
+        },
+        "focus": {
+          "$ref": "#/$defs/TaskFocus",
+          "default": "low"
+        },
+        "deadline": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deadline"
+        },
+        "points": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Points"
+        },
+        "date_of_completion": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Date Of Completion"
+        },
+        "date_of_creation": {
+          "default": null,
+          "format": "date-time",
+          "title": "Date Of Creation",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        }
+      },
+      "required": [
+        "task_name",
+        "team_id"
+      ],
+      "title": "task",
+      "type": "object"
+    },
+    "team": {
+      "description": "A team represents a group of users working together on tasks.\n\nTeams are the organizational units that contain users and tasks. Each team has a unique name\nand can have multiple users as members. Teams provide the context for task collaboration\nand project management.",
+      "properties": {
+        "team_name": {
+          "title": "Team Name",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "team_name",
+        "id"
+      ],
+      "title": "team",
+      "type": "object"
+    },
+    "user": {
+      "description": "A user represents a team member in the system.\n\nUsers are the individual participants who work on tasks within teams. Each user must belong\nto exactly one team, and can collaborate on tasks within that team. Users are identified\nby their unique username and UUID.",
+      "properties": {
+        "username": {
+          "title": "Username",
+          "type": "string"
+        },
+        "team_id": {
+          "format": "uuid",
+          "title": "Team Id",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "username",
+        "team_id",
+        "id"
+      ],
+      "title": "user",
+      "type": "object"
+    },
+    "week": {
+      "description": "A model representing a weekly summary of a user's productivity and accomplishments.\n\nThis model captures a week's worth of work activity, including tasks completed,\ncollaboration metrics, and AI-generated feedback to improve productivity.\nEach week spans from start_date to end_date (7 days later).",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        },
+        "start_date": {
+          "description": "The start date of the week",
+          "format": "date-time",
+          "title": "Start Date",
+          "type": "string"
+        },
+        "end_date": {
+          "description": "The end date of the week (7 days after start_date)",
+          "format": "date-time",
+          "title": "End Date",
+          "type": "string"
+        },
+        "user_id": {
+          "description": "The ID of the user whose productivity is being summarized",
+          "format": "uuid",
+          "title": "User Id",
+          "type": "string"
+        },
+        "summary": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "AI-generated summary of the week's work and productivity patterns",
+          "title": "Summary"
+        },
+        "feedback": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "AI-generated feedback aimed at improving worker productivity",
+          "title": "Feedback"
+        },
+        "collaborators": {
+          "anyOf": [
+            {
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "List of user IDs who were assigned roles on tasks during this week",
+          "title": "Collaborators"
+        },
+        "missed_deadlines": {
+          "anyOf": [
+            {
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "List of task IDs where deadlines were missed during this week",
+          "title": "Missed Deadlines"
+        },
+        "completed_tasks": {
+          "anyOf": [
+            {
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "List of task IDs that were completed during this week",
+          "title": "Completed Tasks"
+        },
+        "points_completed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Total points completed, where points represent estimated hours of work",
+          "title": "Points Completed"
+        }
+      },
+      "required": [
+        "start_date",
+        "end_date",
+        "user_id"
+      ],
+      "title": "week",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "user": {
+      "$ref": "#/$defs/user"
+    },
+    "team": {
+      "$ref": "#/$defs/team"
+    },
+    "week": {
+      "$ref": "#/$defs/week"
+    },
+    "tasks": {
+      "items": {
+        "$ref": "#/$defs/task"
+      },
+      "title": "Tasks",
+      "type": "array"
+    }
+  },
+  "required": [
+    "user",
+    "team",
+    "week",
+    "tasks"
+  ],
+  "title": "WeekState",
+  "type": "object"
+}

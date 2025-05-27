@@ -1,0 +1,130 @@
+{
+  "$defs": {
+    "TaskFocus": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "TaskFocus",
+      "type": "string"
+    },
+    "TaskPriority": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "emergency"
+      ],
+      "title": "TaskPriority",
+      "type": "string"
+    }
+  },
+  "description": "A task represents a unit of work assigned to a team.\n\nTasks are the fundamental building blocks of project management, containing information about\nwhat needs to be done, when it needs to be done, and how important it is. Each task belongs\nto a team and can be worked on by team members.",
+  "properties": {
+    "id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Id"
+    },
+    "task_name": {
+      "title": "Task Name",
+      "type": "string"
+    },
+    "team_id": {
+      "format": "uuid",
+      "title": "Team Id",
+      "type": "string"
+    },
+    "priority": {
+      "$ref": "#/$defs/TaskPriority",
+      "default": "low"
+    },
+    "focus": {
+      "$ref": "#/$defs/TaskFocus",
+      "default": "low"
+    },
+    "deadline": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Deadline"
+    },
+    "points": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Points"
+    },
+    "date_of_completion": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Date Of Completion"
+    },
+    "date_of_creation": {
+      "default": null,
+      "format": "date-time",
+      "title": "Date Of Creation",
+      "type": "string"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "notes": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "task_name",
+    "team_id"
+  ],
+  "title": "task",
+  "type": "object"
+}

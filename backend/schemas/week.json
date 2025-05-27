@@ -1,0 +1,133 @@
+{
+  "description": "A model representing a weekly summary of a user's productivity and accomplishments.\n\nThis model captures a week's worth of work activity, including tasks completed,\ncollaboration metrics, and AI-generated feedback to improve productivity.\nEach week spans from start_date to end_date (7 days later).",
+  "properties": {
+    "id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Id"
+    },
+    "start_date": {
+      "description": "The start date of the week",
+      "format": "date-time",
+      "title": "Start Date",
+      "type": "string"
+    },
+    "end_date": {
+      "description": "The end date of the week (7 days after start_date)",
+      "format": "date-time",
+      "title": "End Date",
+      "type": "string"
+    },
+    "user_id": {
+      "description": "The ID of the user whose productivity is being summarized",
+      "format": "uuid",
+      "title": "User Id",
+      "type": "string"
+    },
+    "summary": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "AI-generated summary of the week's work and productivity patterns",
+      "title": "Summary"
+    },
+    "feedback": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "AI-generated feedback aimed at improving worker productivity",
+      "title": "Feedback"
+    },
+    "collaborators": {
+      "anyOf": [
+        {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "List of user IDs who were assigned roles on tasks during this week",
+      "title": "Collaborators"
+    },
+    "missed_deadlines": {
+      "anyOf": [
+        {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "List of task IDs where deadlines were missed during this week",
+      "title": "Missed Deadlines"
+    },
+    "completed_tasks": {
+      "anyOf": [
+        {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "List of task IDs that were completed during this week",
+      "title": "Completed Tasks"
+    },
+    "points_completed": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Total points completed, where points represent estimated hours of work",
+      "title": "Points Completed"
+    }
+  },
+  "required": [
+    "start_date",
+    "end_date",
+    "user_id"
+  ],
+  "title": "week",
+  "type": "object"
+}
