@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 from app.services.database_service import get_db
 from app.core.repository.task_repository import TasksRepository
-from app.schema.repository.tasks import task
+from app.schema.repository.tasks import task, TaskPriority, TaskFocus
 from pydantic import BaseModel
 from typing import Optional, Any
 from uuid import UUID
@@ -26,7 +26,8 @@ class TaskRequest(BaseModel):
     deadline: datetime | None = None
     date_of_completion: datetime | None = None
     points: int | None = None
-    priority: int | None = 0  # Default to 0 if not provided
+    priority: TaskPriority | None = TaskPriority.LOW
+    focus: TaskFocus | None = TaskFocus.LOW
     description: str | None = None
     notes: str | None = None
     action: task_action
@@ -49,7 +50,8 @@ async def task_post(request: TaskRequest, db: AsyncSession = Depends(get_db)):
                 "team_id": request.team_id,
                 "deadline": request.deadline,
                 "points": request.points,
-                "priority": request.priority or 0,  # Ensure priority is set
+                "priority": request.priority or TaskPriority.LOW,
+                "focus": request.focus or TaskFocus.LOW,
                 "description": request.description,
                 "notes": request.notes,
                 "date_of_completion": request.date_of_completion

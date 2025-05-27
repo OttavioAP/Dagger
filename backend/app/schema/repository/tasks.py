@@ -1,11 +1,23 @@
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import UUID, JSONB, ENUM
 from app.services.database_service import Base
 from sqlalchemy import Column, String, Integer, Text, TIMESTAMP, ForeignKey
 import uuid
 from typing import Optional, Any
 from datetime import datetime
 from sqlalchemy.sql import text
+from enum import Enum
+
+class TaskPriority(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    EMERGENCY = "emergency"
+
+class TaskFocus(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
 
 class task(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -13,7 +25,8 @@ class task(BaseModel):
     id: Optional[uuid.UUID] = None
     task_name: str
     team_id: uuid.UUID
-    priority: int
+    priority: TaskPriority = TaskPriority.LOW
+    focus: TaskFocus = TaskFocus.LOW
     deadline: Optional[datetime] = None
     points: Optional[int] = None
     date_of_completion: Optional[datetime] = None
@@ -32,6 +45,7 @@ class task(BaseModel):
             date_of_completion=obj.date_of_completion,
             date_of_creation=obj.date_of_creation,
             priority=obj.priority,
+            focus=obj.focus,
             description=obj.description,
             notes=obj.notes,
         )
@@ -42,7 +56,8 @@ class TaskSchema(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     date_of_creation = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
-    priority = Column(Integer, nullable=False)
+    priority = Column(ENUM(TaskPriority), nullable=False, default=TaskPriority.LOW)
+    focus = Column(ENUM(TaskFocus), nullable=False, default=TaskFocus.LOW)
     task_name = Column(Text, nullable=False)
     team_id = Column(
         UUID(as_uuid=True), ForeignKey("teams.id", ondelete="CASCADE"), nullable=False

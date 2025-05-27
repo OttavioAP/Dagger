@@ -1,6 +1,6 @@
 from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.schema.repository.tasks import TaskSchema, task
+from app.schema.repository.tasks import TaskSchema, task, TaskPriority, TaskFocus
 from app.core.repository.base_repository import BaseRepository
 from fastapi import HTTPException
 import uuid
@@ -15,6 +15,13 @@ class TasksRepository(BaseRepository[TaskSchema]):
         # Remove setting date_of_creation; let DB handle default
         if 'date_of_creation' in task_data:
             del task_data['date_of_creation']
+        
+        # Ensure priority and focus are set to defaults if not provided
+        if 'priority' not in task_data:
+            task_data['priority'] = TaskPriority.LOW
+        if 'focus' not in task_data:
+            task_data['focus'] = TaskFocus.LOW
+            
         db_task = TaskSchema(**task_data)
         db.add(db_task)
         await db.commit()
