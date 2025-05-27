@@ -10,6 +10,7 @@ from app.api.dag import router as dags_router
 from app.api.user_tasks import router as user_tasks_router
 from app.api.week import router as weeks_router
 from app.api.agentic import router as agentic_router
+from app.services.scheduler_service import scheduler_service
 
 app = FastAPI(
     title="Dagger API",
@@ -38,6 +39,17 @@ app.include_router(user_tasks_router)
 app.include_router(weeks_router)
 app.include_router(agentic_router)
 
+@app.on_event("startup")
+async def startup_event():
+    """Start the scheduler when the application starts."""
+    scheduler_service.start()
+    logger.info("Application started")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Stop the scheduler when the application shuts down."""
+    scheduler_service.stop()
+    logger.info("Application shutdown")
 
 @app.get("/health")
 async def health_check():
