@@ -7,10 +7,18 @@ export type CreateTeamRequest = {
 export type DagAction = 'create' | 'add_edge' | 'delete_edge';
 
 export type DagRequest = {
-    dag_id: string;
+    dag_id?: string | null;
     first_task_id: string;
     second_task_id?: string;
+    team_id: string;
     action: DagAction;
+};
+
+export type DagResponse = {
+    success: boolean;
+    message: string;
+    dag_id?: string | null;
+    new_dag_id?: string | null;
 };
 
 export type HttpValidationError = {
@@ -22,15 +30,29 @@ export type SearchResponse = {
     weeks: Array<Week>;
 };
 
+export type TaskFocus = 'low' | 'medium' | 'high';
+
+export type TaskPriority = 'low' | 'medium' | 'high' | 'emergency';
+
 export type TaskRequest = {
-    task: Task;
+    task_id?: string | null;
+    task_name?: string | null;
+    team_id?: string | null;
+    deadline?: string | null;
+    date_of_completion?: string | null;
+    points?: number | null;
+    priority?: TaskPriority | null;
+    focus?: TaskFocus | null;
+    description?: string | null;
+    notes?: string | null;
     action: TaskAction;
 };
 
 export type UpdateUserOption = 'create' | 'update' | 'delete';
 
 export type UpdateUserRequest = {
-    user: User;
+    user_id: string;
+    team_id?: string | null;
     action: UpdateUserOption;
 };
 
@@ -47,7 +69,7 @@ export type ValidationError = {
 };
 
 export type Dag = {
-    dag_id: string;
+    dag_id?: string | null;
     team_id: string;
     dag_graph: {
         [key: string]: Array<string>;
@@ -60,13 +82,14 @@ export type Task = {
     id?: string | null;
     task_name: string;
     team_id: string;
+    priority?: TaskPriority;
+    focus?: TaskFocus;
     deadline?: string | null;
     points?: number | null;
     date_of_completion?: string | null;
     date_of_creation?: string;
     description?: string | null;
     notes?: string | null;
-    task_data?: unknown | null;
 };
 
 export type TaskAction = 'create' | 'edit' | 'delete';
@@ -180,57 +203,46 @@ export type GetUsersByTeamUserByTeamGetResponses = {
 
 export type GetUsersByTeamUserByTeamGetResponse = GetUsersByTeamUserByTeamGetResponses[keyof GetUsersByTeamUserByTeamGetResponses];
 
-export type TaskActionTasksPostData = {
-    body: TaskRequest;
+export type GetAllTasksTasksGetData = {
+    body?: never;
     path?: never;
     query?: never;
     url: '/tasks/';
 };
 
-export type TaskActionTasksPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type TaskActionTasksPostError = TaskActionTasksPostErrors[keyof TaskActionTasksPostErrors];
-
-export type TaskActionTasksPostResponses = {
-    /**
-     * Successful Response
-     */
-    201: Task;
-};
-
-export type TaskActionTasksPostResponse = TaskActionTasksPostResponses[keyof TaskActionTasksPostResponses];
-
-export type GetAllTasksByTeamTasksTeamIdGetData = {
-    body?: never;
-    path: {
-        team_id: string;
-    };
-    query?: never;
-    url: '/tasks/{team_id}';
-};
-
-export type GetAllTasksByTeamTasksTeamIdGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetAllTasksByTeamTasksTeamIdGetError = GetAllTasksByTeamTasksTeamIdGetErrors[keyof GetAllTasksByTeamTasksTeamIdGetErrors];
-
-export type GetAllTasksByTeamTasksTeamIdGetResponses = {
+export type GetAllTasksTasksGetResponses = {
     /**
      * Successful Response
      */
     200: Array<Task>;
 };
 
-export type GetAllTasksByTeamTasksTeamIdGetResponse = GetAllTasksByTeamTasksTeamIdGetResponses[keyof GetAllTasksByTeamTasksTeamIdGetResponses];
+export type GetAllTasksTasksGetResponse = GetAllTasksTasksGetResponses[keyof GetAllTasksTasksGetResponses];
+
+export type TaskPostTasksPostData = {
+    body: TaskRequest;
+    path?: never;
+    query?: never;
+    url: '/tasks/';
+};
+
+export type TaskPostTasksPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TaskPostTasksPostError = TaskPostTasksPostErrors[keyof TaskPostTasksPostErrors];
+
+export type TaskPostTasksPostResponses = {
+    /**
+     * Successful Response
+     */
+    201: Task;
+};
+
+export type TaskPostTasksPostResponse = TaskPostTasksPostResponses[keyof TaskPostTasksPostResponses];
 
 export type GetAllTeamsTeamsGetData = {
     body?: never;
@@ -300,6 +312,22 @@ export type DeleteTeamTeamsTeamIdDeleteResponses = {
 
 export type DeleteTeamTeamsTeamIdDeleteResponse = DeleteTeamTeamsTeamIdDeleteResponses[keyof DeleteTeamTeamsTeamIdDeleteResponses];
 
+export type GetAllDagsDagGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/dag/';
+};
+
+export type GetAllDagsDagGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: Array<Dag>;
+};
+
+export type GetAllDagsDagGetResponse = GetAllDagsDagGetResponses[keyof GetAllDagsDagGetResponses];
+
 export type DagActionDagPostData = {
     body: DagRequest;
     path?: never;
@@ -320,37 +348,10 @@ export type DagActionDagPostResponses = {
     /**
      * Successful Response
      */
-    200: Dag;
+    200: DagResponse;
 };
 
 export type DagActionDagPostResponse = DagActionDagPostResponses[keyof DagActionDagPostResponses];
-
-export type GetDagsByTeamDagByTeamGetData = {
-    body?: never;
-    path?: never;
-    query: {
-        team_id: string;
-    };
-    url: '/dag/by_team';
-};
-
-export type GetDagsByTeamDagByTeamGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetDagsByTeamDagByTeamGetError = GetDagsByTeamDagByTeamGetErrors[keyof GetDagsByTeamDagByTeamGetErrors];
-
-export type GetDagsByTeamDagByTeamGetResponses = {
-    /**
-     * Successful Response
-     */
-    200: Array<Dag>;
-};
-
-export type GetDagsByTeamDagByTeamGetResponse = GetDagsByTeamDagByTeamGetResponses[keyof GetDagsByTeamDagByTeamGetResponses];
 
 export type GetAllUserTasksUserTasksGetData = {
     body?: never;
