@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUsersByTeamUserByTeamGet } from '@/client/sdk.gen';
+import type { User } from '@/client/types.gen';
 
 export async function GET(req: NextRequest) {
   try {

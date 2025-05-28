@@ -1,11 +1,10 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
+import type { User } from '@/client/types.gen';
 
 // Define the shape of the user
-export type AuthUser = {
-  id: string;
-  username: string;
+export type AuthUser = User & {
   password: string; // For demo purposes only; do not store plaintext passwords in production
 };
 

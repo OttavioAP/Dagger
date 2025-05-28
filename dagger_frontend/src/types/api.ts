@@ -116,7 +116,14 @@ export interface components {
       reply: string;
       /** Weeks */
       weeks: components["schemas"]["week"][];
+      /** Total Count */
+      total_count: number;
     };
+    /**
+     * SearchType
+     * @enum {string}
+     */
+    SearchType: "regular" | "semantic" | "compare";
     /**
      * TaskFocus
      * @enum {string}
@@ -639,9 +646,18 @@ export interface operations {
   agentic_search_agentic_search_get: {
     parameters: {
       query: {
-        query: string;
-        username: string;
-        team_name: string;
+        search_type: components["schemas"]["SearchType"];
+        query?: string | null;
+        week_id?: string | null;
+        number_of_weeks?: number;
+        start_date?: string | null;
+        end_date?: string | null;
+        user_id?: string | null;
+        team_id?: string | null;
+        collaborators?: string[] | null;
+        missed_deadlines_range?: [number, number] | null;
+        completed_task_range?: [number, number] | null;
+        points_range?: [number, number] | null;
       };
     };
     responses: {

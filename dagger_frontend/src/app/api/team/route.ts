@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllTeamsTeamsGet, createTeamTeamsPost, deleteTeamTeamsTeamIdDelete } from '@/client/sdk.gen';
-import type { CreateTeamRequest } from '@/client/types.gen';
+import type { Team, CreateTeamRequest } from '@/client/types.gen';
 
 export async function GET() {
   try {

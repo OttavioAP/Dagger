@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateUserUserPost, getUserByUsernameUserGetUserByUsernameGet } from '@/client/sdk.gen';
-import type { UpdateUserRequest } from '@/client/types.gen';
+import type { UpdateUserRequest, User } from '@/client/types.gen';
 
 export async function POST(req: NextRequest) {
   try {

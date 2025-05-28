@@ -684,30 +684,220 @@
         "operationId": "agentic_search_agentic_search_get",
         "parameters": [
           {
-            "name": "query",
+            "name": "search_type",
             "in": "query",
             "required": true,
             "schema": {
-              "type": "string",
+              "$ref": "#/components/schemas/SearchType"
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Query"
             }
           },
           {
-            "name": "username",
+            "name": "week_id",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string",
-              "title": "Username"
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Week Id"
             }
           },
           {
-            "name": "team_name",
+            "name": "number_of_weeks",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string",
-              "title": "Team Name"
+              "type": "integer",
+              "default": 5,
+              "title": "Number Of Weeks"
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start Date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End Date"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Team Id"
+            }
+          },
+          {
+            "name": "collaborators",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Collaborators"
+            }
+          },
+          {
+            "name": "missed_deadlines_range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "integer"
+                    }
+                  ],
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Missed Deadlines Range"
+            }
+          },
+          {
+            "name": "completed_task_range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "integer"
+                    }
+                  ],
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Completed Task Range"
+            }
+          },
+          {
+            "name": "points_range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "integer"
+                    }
+                  ],
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Points Range"
             }
           }
         ],
@@ -884,14 +1074,28 @@
             },
             "type": "array",
             "title": "Weeks"
+          },
+          "total_count": {
+            "type": "integer",
+            "title": "Total Count"
           }
         },
         "type": "object",
         "required": [
           "reply",
-          "weeks"
+          "weeks",
+          "total_count"
         ],
         "title": "SearchResponse"
+      },
+      "SearchType": {
+        "type": "string",
+        "enum": [
+          "regular",
+          "semantic",
+          "compare"
+        ],
+        "title": "SearchType"
       },
       "TaskFocus": {
         "type": "string",
