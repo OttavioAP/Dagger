@@ -163,13 +163,12 @@ export interface components {
     UpdateUserOption: "create" | "update" | "delete";
     /** UpdateUserRequest */
     UpdateUserRequest: {
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
+      /** User Id */
+      user_id?: string | null;
       /** Team Id */
       team_id?: string | null;
+      /** Username */
+      username?: string | null;
       action: components["schemas"]["UpdateUserOption"];
     };
     /** UserTasksRequest */

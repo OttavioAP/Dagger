@@ -23,15 +23,16 @@ export default function LoginPage() {
         const errorData = await res.json();
         throw new Error(errorData.error || "User not found");
       }
-      const userData = await res.json() as User;
-      console.log('Login response:', userData); // Debug log
+      const userData = await res.json();
+      const user = userData.data ?? userData; // handle both {data: user} and user directly
+      console.log('Login response:', user); // Debug log
       
       // Ensure we have all required fields
-      if (!userData.username || !userData.id || !userData.team_id) {
+      if (!user.username || !user.id || !user.team_id) {
         throw new Error("Invalid user data received");
       }
 
-      setUser(userData);
+      setUser(user);
       router.push("/daggerview");
     } catch (err: unknown) {
       const message =

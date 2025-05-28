@@ -4,14 +4,27 @@ import type { UpdateUserRequest, User } from '@/client/types.gen';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as UpdateUserRequest;
+    const body = (await req.json()) as Partial<UpdateUserRequest>;
 
-    // Call FastAPI backend via generated client
+    // For create, only username, team_id, and action are required
+    if (body.action === 'create') {
+      if (!body.username || !body.team_id) {
+        return NextResponse.json({ error: 'username and team_id are required' }, { status: 400 });
+      }
+      const response = await updateUserUserPost({
+        body: {
+          username: body.username,
+          team_id: body.team_id,
+          action: 'create',
+        },
+      });
+      return NextResponse.json(response, { status: 201 });
+    }
+
+    // For update/delete, pass through as before
     const response = await updateUserUserPost({
-      body,
+      body: body as UpdateUserRequest,
     });
-
-    // Return the backend response to the frontend
     return NextResponse.json(response, { status: 201 });
   } catch (error: unknown) {
     const message =

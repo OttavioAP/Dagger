@@ -53,8 +53,9 @@ export type TaskRequest = {
 export type UpdateUserOption = 'create' | 'update' | 'delete';
 
 export type UpdateUserRequest = {
-    user_id: string;
+    user_id?: string | null;
     team_id?: string | null;
+    username?: string | null;
     action: UpdateUserOption;
 };
 

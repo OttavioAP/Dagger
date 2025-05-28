@@ -8,6 +8,7 @@ from app.schema.repository.user import user
 from pydantic import BaseModel
 from enum import Enum
 from typing import Optional
+
 router = APIRouter(prefix="/user", tags=["user"])
 user_repository = UserRepository()
 
@@ -19,8 +20,9 @@ class UpdateUserOption(Enum):
 
 
 class UpdateUserRequest(BaseModel):
-    user_id: uuid.UUID
+    user_id: Optional[uuid.UUID] = None
     team_id: Optional[uuid.UUID] = None
+    username: Optional[str] = None  # Required for create
     action: UpdateUserOption
 
 
@@ -28,34 +30,53 @@ class UpdateUserRequest(BaseModel):
 async def update_user(request: UpdateUserRequest, db: AsyncSession = Depends(get_db)):
     try:
         if request.action == UpdateUserOption.CREATE:
-            # For create, we need to create a new user with the provided ID and team_id
-            new_user = user(id=request.user_id, team_id=request.team_id)
-            return await user_repository.create_user(db, new_user)
+            if not request.username or not request.team_id:
+                raise HTTPException(
+                    status_code=422,
+                    detail="username and team_id are required for create",
+                )
+            # Let DB generate the id
+            new_user = user(
+                username=request.username, team_id=request.team_id, id=uuid.uuid4()
+            )
+            created_user = await user_repository.create_user(db, new_user)
+            return created_user
         elif request.action == UpdateUserOption.UPDATE:
-            # For update, we need to get the existing user and update its team_id
+            if not request.user_id:
+                raise HTTPException(
+                    status_code=422, detail="user_id is required for update"
+                )
             existing_user = await user_repository.get_user(db, str(request.user_id))
             if not existing_user:
                 raise HTTPException(status_code=404, detail="User not found")
             existing_user.team_id = request.team_id
             return await user_repository.update_user(db, existing_user)
         elif request.action == UpdateUserOption.DELETE:
+            if not request.user_id:
+                raise HTTPException(
+                    status_code=422, detail="user_id is required for delete"
+                )
             return await user_repository.delete_user(db, str(request.user_id))
         else:
             raise HTTPException(status_code=400, detail="Invalid action")
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/get_user_by_username", response_model=user)
-async def get_user_by_username(username: str = Query(...), db: AsyncSession = Depends(get_db)):
+async def get_user_by_username(
+    username: str = Query(...), db: AsyncSession = Depends(get_db)
+):
     try:
         result = await user_repository.get_by_username(db, username)
         if result is None:
             new_user = await user_repository.create_user(
                 db, user(username=username, id=uuid.uuid4())
             )
-            #cheating here to avoid creating real auth
+            # cheating here to avoid creating real auth
             return new_user
         return result
     except Exception as e:

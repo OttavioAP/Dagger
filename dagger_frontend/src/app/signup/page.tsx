@@ -15,7 +15,6 @@ export default function Signup() {
   const [error, setError] = useState("");
   const router = useRouter();
   const { allTeams, refreshAllTeams, loading: teamsLoading } = useTeam();
-  const { setUser } = useAuth();
 
   useEffect(() => {
     console.log('Signup component mounted, calling refreshAllTeams');
@@ -62,16 +61,15 @@ export default function Signup() {
         throw new Error("Please select or create a team");
       }
 
-      const userId = "dummy-id-" + Math.random().toString(36).substring(2, 10);
       const userRes = await fetch('/api/user', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user_id: userId,
-          action: "create",
-          team_id: teamId
+          username: username,
+          team_id: teamId,
+          action: "create"
         }),
       });
 
@@ -83,11 +81,10 @@ export default function Signup() {
       const userData = await userRes.json();
       if (userData.data) {
         const newUser: User = {
-          id: userId,
+          id: userData.data.id,
           username: username,
           team_id: teamId
         };
-        setUser(newUser);
         router.push("/login");
       } else {
         throw new Error("Failed to create user");
