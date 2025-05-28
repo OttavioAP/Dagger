@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { Team, User } from '@/client/types.gen';
 import { useAuth } from './auth_context';
 
@@ -30,7 +30,7 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const fetchTeamUsers = async () => {
+  const fetchTeamUsers = useCallback(async () => {
     if (!user?.team_id) {
       setTeamUsers([]);
       return;
@@ -51,9 +51,9 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.team_id]);
 
-  const fetchCurrentTeam = async () => {
+  const fetchCurrentTeam = useCallback(async () => {
     if (!user?.team_id) {
       setCurrentTeam(null);
       return;
@@ -81,15 +81,15 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
         ...teamData,
         users,
       });
-      setTeamUsers(users); // Update team users state
+      setTeamUsers(users);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.team_id]);
 
-  const fetchAllTeams = async () => {
+  const fetchAllTeams = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -105,14 +105,13 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const switchTeam = async (teamId: string) => {
+  const switchTeam = useCallback(async (teamId: string) => {
     try {
       setLoading(true);
       setError(null);
 
-      // Update user's team in the backend
       const response = await fetch('/api/user', {
         method: 'POST',
         headers: {
@@ -129,19 +128,18 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Failed to switch team');
       }
 
-      // Refresh current team data and team users
       await Promise.all([fetchCurrentTeam(), fetchTeamUsers()]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, fetchCurrentTeam, fetchTeamUsers]);
 
   // Initial fetch of all teams
   useEffect(() => {
     fetchAllTeams();
-  }, []);
+  }, [fetchAllTeams]);
 
   // Fetch current team and team users when user changes
   useEffect(() => {
@@ -151,7 +149,7 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
       setCurrentTeam(null);
       setTeamUsers([]);
     }
-  }, [user?.team_id]);
+  }, [user?.team_id, fetchCurrentTeam, fetchTeamUsers]);
 
   const value = {
     currentTeam,

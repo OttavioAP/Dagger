@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateUserUserPost, createTeamTeamsPost } from "@/client/sdk.gen";
 import type { UpdateUserRequest, CreateTeamRequest, Team } from "@/client/types.gen";
@@ -18,6 +18,10 @@ export default function Signup() {
   const router = useRouter();
   const { allTeams, refreshAllTeams } = useTeam();
   const { setUser } = useAuth();
+
+  useEffect(() => {
+    refreshAllTeams();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,7 +157,7 @@ export default function Signup() {
                   onChange={(e) => setSelectedTeamId(e.target.value)}
                 >
                   <option value="">Select a team</option>
-                  {allTeams.map((team: Team) => (
+                  {Array.isArray(allTeams) && allTeams.map((team: Team) => (
                     <option key={team.id} value={team.id}>
                       {team.team_name}
                     </option>

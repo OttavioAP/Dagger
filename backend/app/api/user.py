@@ -55,6 +55,7 @@ async def get_user_by_username(username: str = Query(...), db: AsyncSession = De
             new_user = await user_repository.create_user(
                 db, user(username=username, id=uuid.uuid4())
             )
+            #cheating here to avoid creating real auth
             return new_user
         return result
     except Exception as e:

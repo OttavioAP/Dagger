@@ -22,11 +22,12 @@ export default function NavBar() {
           <span className="text-xl font-bold tracking-wide">Dagger</span>
         </Link>
         <div className="flex items-center gap-6">
-          <Link href="/" className="hover:text-teal-400 transition">Home</Link>
-          <Link href="/daggerview" className="hover:text-teal-400 transition">DAG View</Link>
           {user ? (
             <>
-              <Link href="/profile" className="hover:text-teal-400 transition">Profile</Link>
+              <Link href="/" className="hover:text-teal-400 transition">Home</Link>
+              <Link href="/daggerview" className="hover:text-teal-400 transition">DAG View</Link>
+              <Link href="/calendarview" className="hover:text-teal-400 transition">Calendar View</Link>
+              <Link href="/dataview" className="hover:text-teal-400 transition">Data View</Link>
               <button
                 onClick={logout}
                 className="ml-4 px-4 py-2 bg-teal-500 hover:bg-teal-600 rounded text-white font-semibold transition"
@@ -35,9 +36,10 @@ export default function NavBar() {
               </button>
             </>
           ) : (
-            <Link href="/login" className="bg-teal-500 hover:bg-teal-600 px-4 py-2 rounded text-white font-semibold transition">
-              Login
-            </Link>
+            <>
+              <Link href="/login" className="hover:text-teal-400 transition">Login</Link>
+              <Link href="/signup" className="hover:text-teal-400 transition">Signup</Link>
+            </>
           )}
         </div>
       </div>

@@ -36,6 +36,7 @@ async def delete_team(team_id: str, db: AsyncSession = Depends(get_db)):
 @router.get("/", response_model=List[team])
 async def get_all_teams(db: AsyncSession = Depends(get_db)):
     try:
-        return await team_repository.get_all_teams(db)
+        teams = await team_repository.get_all_teams(db)
+        return teams
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
