@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as DagRequest;
     const response = await dagActionDagPost({ body });
-    return NextResponse.json(response, { status: 200 });
+    return NextResponse.json(response.data, { status: 200 });
   } catch (error: unknown) {
     const message =
       typeof error === 'object' && error !== null && 'message' in error

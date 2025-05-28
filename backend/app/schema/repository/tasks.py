@@ -100,8 +100,14 @@ class TaskSchema(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP"),
     )
-    priority = Column(ENUM(TaskPriority), nullable=False, default=TaskPriority.LOW)
-    focus = Column(ENUM(TaskFocus), nullable=False, default=TaskFocus.LOW)
+    priority = Column(
+        ENUM(TaskPriority, name="task_priority"),
+        nullable=False,
+        default=TaskPriority.LOW,
+    )
+    focus = Column(
+        ENUM(TaskFocus, name="task_focus"), nullable=False, default=TaskFocus.LOW
+    )
     task_name = Column(Text, nullable=False)
     team_id = Column(
         UUID(as_uuid=True), ForeignKey("teams.id", ondelete="CASCADE"), nullable=False

@@ -37,20 +37,8 @@ tasks_repository = TasksRepository()
 @router.post("/", response_model=DagResponse, status_code=200)
 async def dag_action(request: DagRequest, db: AsyncSession = Depends(get_db)):
     try:
-        if request.action == DagAction.create:
-            if request.first_task_id and request.second_task_id:
-                dag = await dag_repository.create_dag(
-                    db, request.first_task_id, request.second_task_id, request.team_id
-                )
-                return DagResponse(
-                    success=True, message="DAG created successfully", dag_id=dag.dag_id
-                )
-            else:
-                raise HTTPException(
-                    status_code=400,
-                    detail="first_task_id and second_task_id required for create",
-                )
-        elif request.action == DagAction.add_edges:
+        logger.info(f"Received DAG action request: {request.model_dump()}")
+        if request.action == DagAction.add_edges:
             # Add multiple edges from first_task_id to each dependency
             result = await dag_repository.add_edges(
                 db, request.first_task_id, request.dependencies, request.team_id
@@ -68,15 +56,19 @@ async def dag_action(request: DagRequest, db: AsyncSession = Depends(get_db)):
             )
         else:
             raise HTTPException(status_code=400, detail="Invalid action")
+    except HTTPException as e:
+        logger.error(f"HTTPException in dag_action: {e.detail}")
+        raise e
     except Exception as e:
-        logger.error(f"DAG API error: {e}")
+        logger.error(f"Exception in dag_action: {e}", exc_info=True)
         return DagResponse(success=False, message=str(e))
 
 
 @router.get("/", response_model=List[DagModel])
 async def get_all_dags(db: AsyncSession = Depends(get_db)):
     try:
+        logger.info("Received request to get all DAGs")
         return await dag_repository.get_all_dags(db)
     except Exception as e:
-        logger.error(f"Error in get_all_dags: {e}")
+        logger.error(f"Error in get_all_dags: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

@@ -32,7 +32,7 @@ interface DagContextType {
   createDag: (request: DagRequest) => Promise<void>;
   addEdge: (request: DagRequest) => Promise<void>;
   deleteEdge: (request: DagRequest) => Promise<void>;
-  createTask: (request: TaskRequest) => Promise<void>;
+  createTask: (request: TaskRequest) => Promise<Task>;
   assignUserToTask: (request: UserTasksRequest) => Promise<void>;
   removeUserFromTask: (request: UserTasksRequest) => Promise<void>;
   tasksDict: { [key: string]: Task };
@@ -214,7 +214,7 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Create a new task
-  const createTask = async (request: TaskRequest) => {
+  const createTask = async (request: TaskRequest): Promise<Task> => {
     try {
       setLoading(true);
       setError(null);
@@ -234,7 +234,11 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Failed to create task');
       }
 
+      const data = await response.json();
+      // Try to get the created task from data or data.data
+      const createdTask: Task = data.data || data;
       await fetchDags(); // Refresh DAGs after creating task
+      return createdTask;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       throw err;

@@ -38,7 +38,7 @@ class TaskRequest(BaseModel):
 async def task_post(request: TaskRequest, db: AsyncSession = Depends(get_db)):
     try:
         tasks_repository = TasksRepository()
-        logger.info(f"Received request: {request}")
+        logger.info(f"Received request: {request.model_dump()}")
 
         if request.action == task_action.create:
             # For create, we need task_name and team_id
@@ -59,7 +59,8 @@ async def task_post(request: TaskRequest, db: AsyncSession = Depends(get_db)):
                 "description": request.description,
                 "notes": request.notes,
             }
-            return await tasks_repository.create_task(db, task_data)
+            task = await tasks_repository.create_task(db, task_data)
+            return task
 
         elif request.action == task_action.edit:
             # For edit, we need task_id
@@ -102,8 +103,10 @@ async def task_post(request: TaskRequest, db: AsyncSession = Depends(get_db)):
             return await tasks_repository.edit_task(db, request.task_id, updates)
 
     except HTTPException as e:
+        logger.error(f"HTTPException: {e.detail}")
         raise e
     except Exception as e:
+        logger.error(f"Exception in task_post: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
