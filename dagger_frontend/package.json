@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "chmod +x ./generate-types.sh && ./generate-types.sh && openapi-ts -i http://localhost:8080/openapi.json -o src/client -c @hey-api/client-fetch && next build",
+    "build": "openapi-typescript http://localhost:8080/openapi.json -o src/types/api.ts && openapi-ts -i http://localhost:8080/openapi.json -o src/client -c @hey-api/client-fetch && next build",
     "start": "next start",
     "lint": "next lint",
-    "generate-types": "chmod +x ./generate-types.sh && ./generate-types.sh && openapi-ts -i http://localhost:8080/openapi.json -o src/client -c @hey-api/client-fetch"
+    "generate-types": "openapi-typescript http://localhost:8080/openapi.json -o src/types/api.ts"
   },
   "dependencies": {
     "@hey-api/client-fetch": "^0.10.1",

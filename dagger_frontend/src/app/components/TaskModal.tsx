@@ -50,8 +50,11 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
     [tasksDict, task?.id]
   );
 
-  // Helper: get all users
+  // Helper: get all users (only users in current team)
   const availableUsers = Array.isArray(teamUsers) ? teamUsers : [];
+
+  // Error state for deadline
+  const [deadlineError, setDeadlineError] = useState<string | null>(null);
 
   // Handlers for dependencies
   const handleDepInputChange = (idx: number, value: string) => {
@@ -73,6 +76,20 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
 
   // Modal logic
   const handleSubmit = async () => {
+    // Validate deadline is in the future
+    if (deadline) {
+      const deadlineDate = new Date(deadline);
+      const now = new Date();
+      // Set time to end of day for deadline
+      deadlineDate.setHours(23, 59, 59, 999);
+      if (deadlineDate <= now) {
+        setDeadlineError('Deadline must be in the future');
+        return;
+      }
+    } else {
+      setDeadlineError(null);
+    }
+
     const request: TaskRequest = {
       task_id: task?.id || undefined,
       task_name: taskName,
@@ -179,17 +196,22 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
                   value={input}
                   onChange={e => handleUserInputChange(idx, e.target.value)}
                   list={`user-list-${idx}`}
+                  autoComplete="off"
                 />
                 <datalist id={`user-list-${idx}`}>
-                  {availableUsers.filter(u => u.username.toLowerCase().includes(input.toLowerCase())).map(u => (
-                    <option key={u.id} value={u.username} />
-                  ))}
+                  {availableUsers
+                    .filter(u => u.username.toLowerCase().includes(input.toLowerCase()))
+                    .map(u => (
+                      <option key={u.id} value={u.username} />
+                    ))}
                 </datalist>
                 <button type="button" onClick={() => removeUserField(idx)} className="text-red-400">Remove</button>
               </div>
             ))}
             <button type="button" onClick={addUserField} className="text-blue-400">+ Add User</button>
           </div>
+          {/* Deadline error */}
+          {deadlineError && <div className="text-red-400 text-sm mt-2">{deadlineError}</div>}
         </div>
         <div className="flex justify-between mt-8">
           {mode === 'edit' && (

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { 
   DagRequest, 
   TaskRequest, 
@@ -51,8 +51,8 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
   const { currentTeam } = useTeam();
 
   // Fetch all DAGs and their associated tasks and user assignments
-  const fetchDags = async () => {
-    if (!currentTeam?.id) {
+  const fetchDags = useCallback(async () => {
+    if (!user?.team_id) {
       setDags([]);
       setTasksDict({});
       return;
@@ -67,14 +67,14 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
       if (!dagsResponse.ok) {
         throw new Error('Failed to fetch DAGs');
       }
-      const dagsData: Dag[] = await dagsResponse.json();
+      const dagsData: Dag[] = (await dagsResponse.json()).data;
 
       // Fetch all tasks
       const tasksResponse = await fetch('/api/task');
       if (!tasksResponse.ok) {
         throw new Error('Failed to fetch tasks');
       }
-      const tasksData: Task[] = await tasksResponse.json();
+      const tasksData: Task[] = (await tasksResponse.json()).data;
 
       // Build tasksDict
       const newTasksDict: { [key: string]: Task } = {};
@@ -88,17 +88,17 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
       if (!userTasksResponse.ok) {
         throw new Error('Failed to fetch user task assignments');
       }
-      const userTasksData: UserTasks[] = await userTasksResponse.json();
+      const userTasksData: UserTasks[] = (await userTasksResponse.json()).data;
 
       // Process and combine the data
       const processedDags = dagsData
-        .filter((dag) => dag.team_id === currentTeam.id)
+        .filter((dag) => dag.team_id === user.team_id)
         .map((dag) => {
           const nodes: { [key: string]: Task & { assigned_users: string[] } } = {};
           
           // Add task details to nodes
           tasksData
-            .filter((task) => task.team_id === currentTeam.id)
+            .filter((task) => task.team_id === user.team_id)
             .forEach((task) => {
               nodes[task.id!] = {
                 ...task,
@@ -127,7 +127,7 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.team_id]);
 
   // Create a new DAG
   const createDag = async (request: DagRequest) => {
@@ -352,7 +352,7 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
   // Initial fetch of DAGs
   useEffect(() => {
     fetchDags();
-  }, [currentTeam?.id]); // Refresh when team changes
+  }, [fetchDags]);
 
   const value = {
     dags,

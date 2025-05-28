@@ -17,7 +17,6 @@ interface TeamContextType {
   refreshCurrentTeam: () => Promise<void>;
   refreshAllTeams: () => Promise<void>;
   refreshTeamUsers: () => Promise<void>;
-  switchTeam: (teamId: string) => Promise<void>;
 }
 
 const TeamContext = createContext<TeamContextType | undefined>(undefined);
@@ -82,7 +81,10 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
         ...teamData,
         users,
       });
-      setTeamUsers(users);
+      // Always set currentTeam to the user's team
+      // (even if already on that team)
+      // This ensures currentTeam is always in sync
+      // with the user's team_id
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -116,35 +118,6 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const switchTeam = useCallback(async (teamId: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch('/api/user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: user?.id,
-          team_id: teamId,
-          action: 'update'
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to switch team');
-      }
-
-      await Promise.all([fetchCurrentTeam(), fetchTeamUsers()]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id, fetchCurrentTeam, fetchTeamUsers]);
-
   // Initial fetch of all teams
   useEffect(() => {
     if (!initialFetchDone.current) {
@@ -173,7 +146,6 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
     refreshCurrentTeam: fetchCurrentTeam,
     refreshAllTeams: fetchAllTeams,
     refreshTeamUsers: fetchTeamUsers,
-    switchTeam,
   };
 
   return <TeamContext.Provider value={value}>{children}</TeamContext.Provider>;

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllTeamsTeamsGet, taskPostTasksPost } from '@/client/sdk.gen';
+import { getAllTasksTasksGet, taskPostTasksPost } from '@/client/sdk.gen';
 import type { TaskRequest } from '@/client/types.gen';
 
 export async function GET(req: NextRequest) {
   try {
-    const response = await getAllTeamsTeamsGet();
+    const response = await getAllTasksTasksGet();
     return NextResponse.json(response, { status: 200 });
   } catch (error: unknown) {
     const message =

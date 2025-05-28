@@ -10,7 +10,7 @@ import TaskModal from "../components/TaskModal";
 export default function DaggerviewPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const { dags, loading, tasksDict } = useDag();
+  const { dags, loading, tasksDict, refreshDags } = useDag();
 
   const [selectedDagId, setSelectedDagId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -21,7 +21,8 @@ export default function DaggerviewPage() {
     if (!user) {
       router.replace("/login");
     }
-  }, [user, router]);
+    refreshDags();
+  }, [user, router, refreshDags]);
 
   // Set default selected DAG when dags load
   useEffect(() => {

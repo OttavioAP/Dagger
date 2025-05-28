@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/contexts/auth_context";
 import { toast } from "react-toastify";
@@ -11,7 +11,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-  const { setUser } = useAuth();
+  const { setUser, user } = useAuth();
+
+  useEffect(() => {
+    if (user?.team_id) {
+      router.push("/daggerview");
+    }
+  }, [user?.team_id, router]);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -33,7 +39,6 @@ export default function LoginPage() {
       }
 
       setUser(user);
-      router.push("/daggerview");
     } catch (err: unknown) {
       const message =
         typeof err === 'object' && err !== null && 'message' in err
