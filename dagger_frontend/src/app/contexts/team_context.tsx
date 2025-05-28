@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { Team, User } from '@/client/types.gen';
-import { useAuth } from './auth_context';
+import { useAuth } from '../contexts/auth_context';
 
 interface TeamWithUsers extends Team {
   users: User[];
@@ -10,20 +10,20 @@ interface TeamWithUsers extends Team {
 
 interface TeamContextType {
   currentTeam: TeamWithUsers | null;
-  allTeams: Team[];
+  allTeams: TeamWithUsers[];
   teamUsers: User[]; // Users in the current team
   loading: boolean;
   error: string | null;
-  refreshCurrentTeam: () => Promise<void>;
-  refreshAllTeams: () => Promise<void>;
+  refreshTeams: () => Promise<void>;
   refreshTeamUsers: () => Promise<void>;
+  refreshTeamsAndUsers: () => Promise<void>;
 }
 
 const TeamContext = createContext<TeamContextType | undefined>(undefined);
 
 export function TeamProvider({ children }: { children: React.ReactNode }) {
   const [currentTeam, setCurrentTeam] = useState<TeamWithUsers | null>(null);
-  const [allTeams, setAllTeams] = useState<Team[]>([]);
+  const [allTeams, setAllTeams] = useState<TeamWithUsers[]>([]);
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +44,7 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
       if (!response.ok) {
         throw new Error('Failed to fetch team users');
       }
-      const users: User[] = await response.json();
+      const users: User[] = (await response.json()).data;
       setTeamUsers(users);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -53,48 +53,8 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user?.team_id]);
 
-  const fetchCurrentTeam = useCallback(async () => {
-    if (!user?.team_id) {
-      setCurrentTeam(null);
-      return;
-    }
-
+  const fetchTeams = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
-
-      // Fetch team details
-      const teamResponse = await fetch(`/api/team/${user.team_id}`);
-      if (!teamResponse.ok) {
-        throw new Error('Failed to fetch current team');
-      }
-      const teamData: Team = await teamResponse.json();
-
-      // Fetch team users
-      const usersResponse = await fetch(`/api/user/byTeam?team_id=${user.team_id}`);
-      if (!usersResponse.ok) {
-        throw new Error('Failed to fetch team users');
-      }
-      const users: User[] = await usersResponse.json();
-
-      setCurrentTeam({
-        ...teamData,
-        users,
-      });
-      // Always set currentTeam to the user's team
-      // (even if already on that team)
-      // This ensures currentTeam is always in sync
-      // with the user's team_id
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.team_id]);
-
-  const fetchAllTeams = useCallback(async () => {
-    try {
-      console.log('fetchAllTeams: starting fetch');
       setLoading(true);
       setError(null);
 
@@ -103,39 +63,67 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Failed to fetch teams');
       }
       const responseData = await response.json();
-      console.log('fetchAllTeams: received data:', responseData);
-      // Extract the teams array from the response data
       const teamsData = responseData.data || [];
-      console.log('fetchAllTeams: extracted teams:', teamsData);
       setAllTeams(teamsData);
-      console.log('fetchAllTeams: setAllTeams called');
+
+      if (user?.team_id) {
+        const foundTeam = teamsData.find((team: Team) => team.id === user.team_id);
+        if (foundTeam) {
+          const usersResponse = await fetch(`/api/user/byTeam?team_id=${user.team_id}`);
+          const users: User[] = usersResponse.ok ? (await usersResponse.json()).data : [];
+          setCurrentTeam({ ...foundTeam, users });
+        } else {
+          setCurrentTeam(null);
+        }
+      } else {
+        setCurrentTeam(null);
+      }
     } catch (err) {
-      console.error('fetchAllTeams: error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
-      console.log('fetchAllTeams: loading set to false');
     }
-  }, []);
+  }, [user?.team_id]);
 
-  // Initial fetch of all teams
+  const refreshTeamsAndUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch('/api/team');
+      if (!response.ok) {
+        throw new Error('Failed to fetch teams');
+      }
+      const responseData = await response.json();
+      const teamsData: Team[] = responseData.data || [];
+      const teamsWithUsers: TeamWithUsers[] = await Promise.all(
+        teamsData.map(async (team) => {
+          const usersResponse = await fetch(`/api/user/byTeam?team_id=${team.id}`);
+          const users: User[] = usersResponse.ok ? (await usersResponse.json()).data : [];
+          return { ...team, users };
+        })
+      );
+      setAllTeams(teamsWithUsers);
+      if (user?.team_id) {
+        const foundTeam = teamsWithUsers.find((team) => team.id === user.team_id) || null;
+        setCurrentTeam(foundTeam);
+        setTeamUsers(foundTeam ? foundTeam.users : []);
+      } else {
+        setCurrentTeam(null);
+        setTeamUsers([]);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.team_id]);
+
   useEffect(() => {
     if (!initialFetchDone.current) {
-      console.log('TeamProvider: initial fetch starting');
-      fetchAllTeams();
+      fetchTeams();
       initialFetchDone.current = true;
     }
-  }, [fetchAllTeams]);
-
-  // Fetch current team and team users when user changes
-  useEffect(() => {
-    if (user?.team_id) {
-      Promise.all([fetchCurrentTeam(), fetchTeamUsers()]);
-    } else {
-      setCurrentTeam(null);
-      setTeamUsers([]);
-    }
-  }, [user?.team_id, fetchCurrentTeam, fetchTeamUsers]);
+  }, [fetchTeams]);
 
   const value = {
     currentTeam,
@@ -143,9 +131,9 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
     teamUsers,
     loading,
     error,
-    refreshCurrentTeam: fetchCurrentTeam,
-    refreshAllTeams: fetchAllTeams,
+    refreshTeams: fetchTeams,
     refreshTeamUsers: fetchTeamUsers,
+    refreshTeamsAndUsers,
   };
 
   return <TeamContext.Provider value={value}>{children}</TeamContext.Provider>;

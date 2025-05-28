@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useDag } from '../contexts/dag_context';
 import { useTeam } from '../contexts/team_context';
 import type { Task, TaskRequest, TaskPriority, TaskFocus } from '@/client/types.gen';
+
 
 interface TaskModalProps {
   mode: 'create' | 'edit';
@@ -26,8 +27,6 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
     removeUserFromTask,
   } = useDag();
   const { teamUsers } = useTeam();
-
-  // Form state
   const [taskName, setTaskName] = useState(task?.task_name || '');
   const [description, setDescription] = useState(task?.description || '');
   const [deadline, setDeadline] = useState(task?.deadline || '');
@@ -35,6 +34,7 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
   const [focus, setFocus] = useState<TaskFocus>(task?.focus || 'LOW');
   const [points, setPoints] = useState<number>(task?.points || 0);
   const [notes, setNotes] = useState(task?.notes || '');
+
 
   // Dependency and user assignment state
   const [dependencies, setDependencies] = useState<string[]>([]); // task ids
@@ -74,6 +74,21 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
   const addUserField = () => setUserInputs([...userInputs, '']);
   const removeUserField = (idx: number) => setUserInputs(userInputs.filter((_, i) => i !== idx));
 
+  // Deadline change handler with validation
+  const handleDeadlineChange = (value: string) => {
+    if (value) {
+      const deadlineDate = new Date(value);
+      const now = new Date();
+      deadlineDate.setHours(23, 59, 59, 999);
+      if (deadlineDate <= now) {
+        setDeadlineError('Deadline must be in the future');
+        return;
+      }
+    }
+    setDeadlineError(null);
+    setDeadline(value);
+  };
+
   // Modal logic
   const handleSubmit = async () => {
     // Validate deadline is in the future
@@ -90,6 +105,13 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
       setDeadlineError(null);
     }
 
+    // Map userInputs (usernames) to user IDs, filter out invalid/duplicate
+    const userIds = Array.from(new Set(
+      userInputs
+        .map(input => availableUsers.find(u => u.username === input)?.id)
+        .filter((id): id is string => Boolean(id))
+    ));
+
     const request: TaskRequest = {
       task_id: task?.id || undefined,
       task_name: taskName,
@@ -104,13 +126,33 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
     };
     if (mode === 'create') {
       await createTask(request);
+      // Assign users to task
+      if (userIds.length > 0) {
+        for (const user_id of userIds) {
+          await assignUserToTask({ user_id, task_id: request.task_id!, action: 'add' });
+        }
+      }
       // handle dependencies: if any, create dag or add edge
       // (pseudo: if no dag exists, createDag, else addEdge)
-      // handle user assignments
     } else {
       await updateTask(request);
+      // Assign users to task (add new, remove missing)
+      if (task?.id) {
+        const prevUserIds = (task as any).assigned_users || [];
+        // Add new users
+        for (const user_id of userIds) {
+          if (!prevUserIds.includes(user_id)) {
+            await assignUserToTask({ user_id, task_id: task.id, action: 'add' });
+          }
+        }
+        // Remove users not in the new list
+        for (const user_id of prevUserIds) {
+          if (!userIds.includes(user_id)) {
+            await removeUserFromTask({ user_id, task_id: task.id, action: 'delete' });
+          }
+        }
+      }
       // handle dependencies: addEdge/deleteEdge as needed
-      // handle user assignments
     }
     onClose();
   };
@@ -139,7 +181,8 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
           </div>
           <div>
             <label className="block mb-1 font-semibold" htmlFor="deadline">Deadline</label>
-            <input id="deadline" className="w-full p-2 rounded bg-[#23232a] text-white" type="date" value={deadline || ''} onChange={e => setDeadline(e.target.value)} />
+            <input id="deadline" className="w-full p-2 rounded bg-[#23232a] text-white" type="date" value={deadline || ''} onChange={e => handleDeadlineChange(e.target.value)} />
+            {deadlineError && <div className="text-red-400 text-sm mt-1">{deadlineError}</div>}
           </div>
           <div className="flex gap-2">
             <div className="flex-1">
@@ -210,8 +253,6 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
             ))}
             <button type="button" onClick={addUserField} className="text-blue-400">+ Add User</button>
           </div>
-          {/* Deadline error */}
-          {deadlineError && <div className="text-red-400 text-sm mt-2">{deadlineError}</div>}
         </div>
         <div className="flex justify-between mt-8">
           {mode === 'edit' && (

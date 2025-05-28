@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/contexts/auth_context";
 import { useDag } from "@/app/contexts/dag_context";
+import { useTeam } from "@/app/contexts/team_context";
 import TaskGraph from "../components/TaskGraph";
 import TaskModal from "../components/TaskModal";
 
@@ -11,6 +12,8 @@ export default function DaggerviewPage() {
   const { user } = useAuth();
   const router = useRouter();
   const { dags, loading, tasksDict, refreshDags } = useDag();
+  const { refreshTeamsAndUsers } = useTeam();
+
 
   const [selectedDagId, setSelectedDagId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -22,7 +25,8 @@ export default function DaggerviewPage() {
       router.replace("/login");
     }
     refreshDags();
-  }, [user, router, refreshDags]);
+    refreshTeamsAndUsers();
+  }, [user, router, refreshDags, refreshTeamsAndUsers]);
 
   // Set default selected DAG when dags load
   useEffect(() => {
