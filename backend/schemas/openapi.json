@@ -1100,19 +1100,19 @@
       "TaskFocus": {
         "type": "string",
         "enum": [
-          "low",
-          "medium",
-          "high"
+          "LOW",
+          "MEDIUM",
+          "HIGH"
         ],
         "title": "TaskFocus"
       },
       "TaskPriority": {
         "type": "string",
         "enum": [
-          "low",
-          "medium",
-          "high",
-          "emergency"
+          "LOW",
+          "MEDIUM",
+          "HIGH",
+          "EMERGENCY"
         ],
         "title": "TaskPriority"
       },
@@ -1185,7 +1185,7 @@
                 "type": "null"
               }
             ],
-            "default": "low"
+            "default": "LOW"
           },
           "focus": {
             "anyOf": [
@@ -1196,7 +1196,7 @@
                 "type": "null"
               }
             ],
-            "default": "low"
+            "default": "LOW"
           },
           "description": {
             "anyOf": [
@@ -1445,11 +1445,11 @@
           },
           "priority": {
             "$ref": "#/components/schemas/TaskPriority",
-            "default": "low"
+            "default": "LOW"
           },
           "focus": {
             "$ref": "#/components/schemas/TaskFocus",
-            "default": "low"
+            "default": "LOW"
           },
           "deadline": {
             "anyOf": [

@@ -4,6 +4,8 @@ import "./globals.css";
 import { AuthProvider } from './contexts/auth_context'
 import { TeamProvider } from './contexts/team_context'
 import NavBar from './components/NavBar'
+import { DagProvider } from './contexts/dag_context'
+
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,8 +27,10 @@ export default function RootLayout({
       <body className={`${inter.variable} antialiased`}>
         <AuthProvider>
           <TeamProvider>
-            <NavBar />
-            {children}
+            <DagProvider>
+              <NavBar />
+              {children}
+            </DagProvider>
           </TeamProvider>
         </AuthProvider>
       </body>

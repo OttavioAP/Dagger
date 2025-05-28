@@ -8,24 +8,28 @@ from datetime import datetime
 from sqlalchemy.sql import text
 from enum import Enum
 
+
 class TaskPriority(str, Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    EMERGENCY = "emergency"
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    EMERGENCY = "EMERGENCY"
+
 
 class TaskFocus(str, Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
 
 class task(BaseModel):
     """A task represents a unit of work assigned to a team.
-    
+
     Tasks are the fundamental building blocks of project management, containing information about
     what needs to be done, when it needs to be done, and how important it is. Each task belongs
     to a team and can be worked on by team members.
     """
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     id: Optional[uuid.UUID] = None
@@ -91,7 +95,11 @@ class TaskSchema(Base):
     __tablename__ = "tasks"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    date_of_creation = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    date_of_creation = Column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP"),
+    )
     priority = Column(ENUM(TaskPriority), nullable=False, default=TaskPriority.LOW)
     focus = Column(ENUM(TaskFocus), nullable=False, default=TaskFocus.LOW)
     task_name = Column(Text, nullable=False)

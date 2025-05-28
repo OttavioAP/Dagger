@@ -128,12 +128,12 @@ export interface components {
      * TaskFocus
      * @enum {string}
      */
-    TaskFocus: "low" | "medium" | "high";
+    TaskFocus: "LOW" | "MEDIUM" | "HIGH";
     /**
      * TaskPriority
      * @enum {string}
      */
-    TaskPriority: "low" | "medium" | "high" | "emergency";
+    TaskPriority: "LOW" | "MEDIUM" | "HIGH" | "EMERGENCY";
     /** TaskRequest */
     TaskRequest: {
       /** Task Id */
@@ -146,9 +146,9 @@ export interface components {
       deadline?: string | null;
       /** Points */
       points?: number | null;
-      /** @default low */
+      /** @default LOW */
       priority?: components["schemas"]["TaskPriority"] | null;
-      /** @default low */
+      /** @default LOW */
       focus?: components["schemas"]["TaskFocus"] | null;
       /** Description */
       description?: string | null;
@@ -237,9 +237,9 @@ export interface components {
        * Format: uuid
        */
       team_id: string;
-      /** @default low */
+      /** @default LOW */
       priority?: components["schemas"]["TaskPriority"];
-      /** @default low */
+      /** @default LOW */
       focus?: components["schemas"]["TaskFocus"];
       /** Deadline */
       deadline?: string | null;

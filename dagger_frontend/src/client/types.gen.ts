@@ -33,9 +33,9 @@ export type SearchResponse = {
 
 export type SearchType = 'regular' | 'semantic' | 'compare';
 
-export type TaskFocus = 'low' | 'medium' | 'high';
+export type TaskFocus = 'LOW' | 'MEDIUM' | 'HIGH';
 
-export type TaskPriority = 'low' | 'medium' | 'high' | 'emergency';
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'EMERGENCY';
 
 export type TaskRequest = {
     task_id?: string | null;

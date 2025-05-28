@@ -16,7 +16,7 @@ import { useAuth } from './auth_context';
 import { useTeam } from './team_context';
 
 // Types for DAG context using auto-generated types
-interface DagWithDetails extends Dag {
+export interface DagWithDetails extends Dag {
   nodes: {
     [key: string]: Task & {
       assigned_users: string[]; // User IDs
@@ -35,12 +35,16 @@ interface DagContextType {
   createTask: (request: TaskRequest) => Promise<void>;
   assignUserToTask: (request: UserTasksRequest) => Promise<void>;
   removeUserFromTask: (request: UserTasksRequest) => Promise<void>;
+  tasksDict: { [key: string]: Task };
+  deleteTask: (taskId: string) => Promise<void>;
+  updateTask: (request: TaskRequest) => Promise<void>;
 }
 
 const DagContext = createContext<DagContextType | undefined>(undefined);
 
 export function DagProvider({ children }: { children: React.ReactNode }) {
   const [dags, setDags] = useState<DagWithDetails[]>([]);
+  const [tasksDict, setTasksDict] = useState<{ [key: string]: Task }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
@@ -50,6 +54,7 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
   const fetchDags = async () => {
     if (!currentTeam?.id) {
       setDags([]);
+      setTasksDict({});
       return;
     }
 
@@ -70,6 +75,13 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Failed to fetch tasks');
       }
       const tasksData: Task[] = await tasksResponse.json();
+
+      // Build tasksDict
+      const newTasksDict: { [key: string]: Task } = {};
+      tasksData.forEach(task => {
+        if (task.id) newTasksDict[task.id] = task;
+      });
+      setTasksDict(newTasksDict);
 
       // Fetch all user task assignments
       const userTasksResponse = await fetch('/api/userTask');
@@ -213,8 +225,8 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({
           ...request,
           action: 'create',
-          priority: request.priority || 'low' as TaskPriority,
-          focus: request.focus || 'low' as TaskFocus
+          priority: request.priority || 'LOW' as TaskPriority,
+          focus: request.focus || 'LOW' as TaskFocus
         })
       });
 
@@ -287,6 +299,56 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Delete a task
+  const deleteTask = async (taskId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch('/api/task', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task_id: taskId, action: 'delete' })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete task');
+      }
+
+      await fetchDags();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update a task
+  const updateTask = async (request: TaskRequest) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch('/api/task', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...request, action: 'edit' })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update task');
+      }
+
+      await fetchDags();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Initial fetch of DAGs
   useEffect(() => {
     fetchDags();
@@ -302,7 +364,10 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
     deleteEdge,
     createTask,
     assignUserToTask,
-    removeUserFromTask
+    removeUserFromTask,
+    tasksDict,
+    deleteTask,
+    updateTask
   };
 
   return <DagContext.Provider value={value}>{children}</DagContext.Provider>;

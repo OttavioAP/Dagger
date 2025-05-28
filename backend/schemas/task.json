@@ -2,19 +2,19 @@
   "$defs": {
     "TaskFocus": {
       "enum": [
-        "low",
-        "medium",
-        "high"
+        "LOW",
+        "MEDIUM",
+        "HIGH"
       ],
       "title": "TaskFocus",
       "type": "string"
     },
     "TaskPriority": {
       "enum": [
-        "low",
-        "medium",
-        "high",
-        "emergency"
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "EMERGENCY"
       ],
       "title": "TaskPriority",
       "type": "string"
@@ -46,11 +46,11 @@
     },
     "priority": {
       "$ref": "#/$defs/TaskPriority",
-      "default": "low"
+      "default": "LOW"
     },
     "focus": {
       "$ref": "#/$defs/TaskFocus",
-      "default": "low"
+      "default": "LOW"
     },
     "deadline": {
       "anyOf": [
