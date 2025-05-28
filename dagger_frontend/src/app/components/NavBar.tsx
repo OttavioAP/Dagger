@@ -28,6 +28,7 @@ export default function NavBar() {
               <Link href="/daggerview" className="hover:text-teal-400 transition">DAG View</Link>
               <Link href="/calendarview" className="hover:text-teal-400 transition">Calendar View</Link>
               <Link href="/dataview" className="hover:text-teal-400 transition">Data View</Link>
+              <Link href="/profile" className="hover:text-teal-400 transition">Profile</Link>
               <button
                 onClick={logout}
                 className="ml-4 px-4 py-2 bg-teal-500 hover:bg-teal-600 rounded text-white font-semibold transition"

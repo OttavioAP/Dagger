@@ -2,26 +2,29 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { updateUserUserPost, createTeamTeamsPost } from "@/client/sdk.gen";
-import type { UpdateUserRequest, CreateTeamRequest, Team } from "@/client/types.gen";
+import type { User } from "@/types/shared";
 import { useTeam } from "@/app/contexts/team_context";
 import { useAuth } from "@/app/contexts/auth_context";
 
 export default function Signup() {
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
   const [newTeamName, setNewTeamName] = useState("");
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-  const { allTeams, refreshAllTeams } = useTeam();
+  const { allTeams, refreshAllTeams, loading: teamsLoading } = useTeam();
   const { setUser } = useAuth();
 
   useEffect(() => {
+    console.log('Signup component mounted, calling refreshAllTeams');
     refreshAllTeams();
   }, []);
+
+  useEffect(() => {
+    console.log('allTeams updated:', allTeams);
+  }, [allTeams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,12 +36,22 @@ export default function Signup() {
 
       // If creating a new team
       if (isCreatingTeam && newTeamName) {
-        const teamRequest: CreateTeamRequest = {
-          team_name: newTeamName
-        };
-        const teamResponse = await createTeamTeamsPost({ body: teamRequest });
-        if (teamResponse.data) {
-          teamId = teamResponse.data.id;
+        const teamRes = await fetch('/api/team', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ team_name: newTeamName }),
+        });
+
+        if (!teamRes.ok) {
+          const errorData = await teamRes.json();
+          throw new Error(errorData.error || "Failed to create team");
+        }
+
+        const teamData = await teamRes.json();
+        if (teamData.data) {
+          teamId = teamData.data.id;
           await refreshAllTeams(); // Refresh teams list after creating new team
         } else {
           throw new Error("Failed to create team");
@@ -50,23 +63,35 @@ export default function Signup() {
       }
 
       const userId = "dummy-id-" + Math.random().toString(36).substring(2, 10);
-      const userRequest: UpdateUserRequest = {
-        user_id: userId,
-        action: "create",
-        team_id: teamId
-      };
-
-      await updateUserUserPost({ body: userRequest });
-      
-      // Set user in auth context with team_id
-      setUser({
-        id: userId,
-        username,
-        password,
-        team_id: teamId
+      const userRes = await fetch('/api/user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          action: "create",
+          team_id: teamId
+        }),
       });
-      
-      router.push("/login");
+
+      if (!userRes.ok) {
+        const errorData = await userRes.json();
+        throw new Error(errorData.error || "Failed to create user");
+      }
+
+      const userData = await userRes.json();
+      if (userData.data) {
+        const newUser: User = {
+          id: userId,
+          username: username,
+          team_id: teamId
+        };
+        setUser(newUser);
+        router.push("/login");
+      } else {
+        throw new Error("Failed to create user");
+      }
     } catch (err: unknown) {
       const message =
         typeof err === 'object' && err !== null && 'message' in err
@@ -114,8 +139,6 @@ export default function Signup() {
                 required
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-400 text-white bg-gray-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
             <div className="flex items-center space-x-4">
@@ -148,21 +171,25 @@ export default function Signup() {
                 <label htmlFor="team" className="sr-only">
                   Select Team
                 </label>
-                <select
-                  id="team"
-                  name="team"
-                  required
-                  className="appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-400 text-white bg-gray-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={selectedTeamId}
-                  onChange={(e) => setSelectedTeamId(e.target.value)}
-                >
-                  <option value="">Select a team</option>
-                  {Array.isArray(allTeams) && allTeams.map((team: Team) => (
-                    <option key={team.id} value={team.id}>
-                      {team.team_name}
-                    </option>
-                  ))}
-                </select>
+                {teamsLoading ? (
+                  <div className="text-center py-2 text-gray-400">Loading teams...</div>
+                ) : (
+                  <select
+                    id="team"
+                    name="team"
+                    required
+                    className="appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-400 text-white bg-gray-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={selectedTeamId}
+                    onChange={(e) => setSelectedTeamId(e.target.value)}
+                  >
+                    <option value="">Select a team</option>
+                    {Array.isArray(allTeams) && allTeams.map((team) => (
+                      <option key={team.id} value={team.id}>
+                        {team.team_name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             )}
           </div>

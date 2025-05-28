@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { Team, User } from '@/client/types.gen';
 import { useAuth } from './auth_context';
 
@@ -26,9 +26,10 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
   const [currentTeam, setCurrentTeam] = useState<TeamWithUsers | null>(null);
   const [allTeams, setAllTeams] = useState<Team[]>([]);
   const [teamUsers, setTeamUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const initialFetchDone = useRef(false);
 
   const fetchTeamUsers = useCallback(async () => {
     if (!user?.team_id) {
@@ -91,6 +92,7 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
 
   const fetchAllTeams = useCallback(async () => {
     try {
+      console.log('fetchAllTeams: starting fetch');
       setLoading(true);
       setError(null);
 
@@ -98,12 +100,19 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
       if (!response.ok) {
         throw new Error('Failed to fetch teams');
       }
-      const teamsData: Team[] = await response.json();
+      const responseData = await response.json();
+      console.log('fetchAllTeams: received data:', responseData);
+      // Extract the teams array from the response data
+      const teamsData = responseData.data || [];
+      console.log('fetchAllTeams: extracted teams:', teamsData);
       setAllTeams(teamsData);
+      console.log('fetchAllTeams: setAllTeams called');
     } catch (err) {
+      console.error('fetchAllTeams: error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+      console.log('fetchAllTeams: loading set to false');
     }
   }, []);
 
@@ -138,7 +147,11 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
 
   // Initial fetch of all teams
   useEffect(() => {
-    fetchAllTeams();
+    if (!initialFetchDone.current) {
+      console.log('TeamProvider: initial fetch starting');
+      fetchAllTeams();
+      initialFetchDone.current = true;
+    }
   }, [fetchAllTeams]);
 
   // Fetch current team and team users when user changes

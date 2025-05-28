@@ -1,24 +1,19 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import type { User } from '@/client/types.gen';
-
-// Define the shape of the user
-export type AuthUser = User & {
-  password: string; // For demo purposes only; do not store plaintext passwords in production
-};
+import type { User } from '@/types/shared';
 
 // Define the context value type
 type AuthContextType = {
-  user: AuthUser | null;
-  setUser: (user: AuthUser | null) => void;
+  user: User | null;
+  setUser: (user: User | null) => void;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   const logout = () => setUser(null);
 
