@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const { allTeams, refreshCurrentTeam, loading } = useTeam();
+  const { allTeams, refreshTeamUsers, loading } = useTeam();
   const [selectedTeamId, setSelectedTeamId] = useState(user?.team_id || '');
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export default function ProfilePage() {
   const handleTeamChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newTeamId = e.target.value;
     setSelectedTeamId(newTeamId);
-    await refreshCurrentTeam();
+    await refreshTeamUsers();
   };
 
   return (

@@ -960,35 +960,25 @@
       "DagAction": {
         "type": "string",
         "enum": [
-          "create",
-          "add_edge",
-          "delete_edge"
+          "add_edges",
+          "delete_edges"
         ],
         "title": "DagAction"
       },
       "DagRequest": {
         "properties": {
-          "dag_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Dag Id"
-          },
           "first_task_id": {
             "type": "string",
             "format": "uuid",
             "title": "First Task Id"
           },
-          "second_task_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Second Task Id"
+          "dependencies": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Dependencies"
           },
           "team_id": {
             "type": "string",
@@ -1002,6 +992,7 @@
         "type": "object",
         "required": [
           "first_task_id",
+          "dependencies",
           "team_id",
           "action"
         ],
@@ -1016,30 +1007,6 @@
           "message": {
             "type": "string",
             "title": "Message"
-          },
-          "dag_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Dag Id"
-          },
-          "new_dag_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "New Dag Id"
           }
         },
         "type": "object",

@@ -14,11 +14,11 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-  const { allTeams, refreshAllTeams, loading: teamsLoading } = useTeam();
+  const { allTeams, refreshTeams, loading: teamsLoading } = useTeam();
 
   useEffect(() => {
-    console.log('Signup component mounted, calling refreshAllTeams');
-    refreshAllTeams();
+    console.log('Signup component mounted, calling refreshTeams');
+    refreshTeams();
   }, []);
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export default function Signup() {
         const teamData = await teamRes.json();
         if (teamData.data) {
           teamId = teamData.data.id;
-          await refreshAllTeams(); // Refresh teams list after creating new team
+          await refreshTeams(); // Refresh teams list after creating new team
         } else {
           throw new Error("Failed to create team");
         }

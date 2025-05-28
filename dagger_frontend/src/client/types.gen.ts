@@ -4,12 +4,11 @@ export type CreateTeamRequest = {
     team_name: string;
 };
 
-export type DagAction = 'create' | 'add_edge' | 'delete_edge';
+export type DagAction = 'add_edges' | 'delete_edges';
 
 export type DagRequest = {
-    dag_id?: string | null;
     first_task_id: string;
-    second_task_id?: string;
+    dependencies: Array<string>;
     team_id: string;
     action: DagAction;
 };
@@ -17,8 +16,6 @@ export type DagRequest = {
 export type DagResponse = {
     success: boolean;
     message: string;
-    dag_id?: string | null;
-    new_dag_id?: string | null;
 };
 
 export type HttpValidationError = {

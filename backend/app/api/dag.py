@@ -13,15 +13,13 @@ import uuid
 
 
 class DagAction(str, Enum):
-    create = "create"
-    add_edge = "add_edge"
-    delete_edge = "delete_edge"
+    add_edges = "add_edges"
+    delete_edges = "delete_edges"
 
 
 class DagRequest(BaseModel):
-    dag_id: Optional[uuid.UUID] = None
     first_task_id: uuid.UUID
-    second_task_id: uuid.UUID = None
+    dependencies: List[uuid.UUID]
     team_id: uuid.UUID
     action: DagAction
 
@@ -29,8 +27,6 @@ class DagRequest(BaseModel):
 class DagResponse(BaseModel):
     success: bool
     message: str
-    dag_id: Optional[uuid.UUID] = None
-    new_dag_id: Optional[uuid.UUID] = None
 
 
 router = APIRouter(prefix="/dag", tags=["dag"])
@@ -47,46 +43,28 @@ async def dag_action(request: DagRequest, db: AsyncSession = Depends(get_db)):
                     db, request.first_task_id, request.second_task_id, request.team_id
                 )
                 return DagResponse(
-                    success=True,
-                    message="DAG created successfully",
-                    dag_id=dag.dag_id
+                    success=True, message="DAG created successfully", dag_id=dag.dag_id
                 )
             else:
                 raise HTTPException(
                     status_code=400,
                     detail="first_task_id and second_task_id required for create",
                 )
-        elif request.action == DagAction.add_edge:
-            if not request.dag_id:
-                raise HTTPException(status_code=400, detail="dag_id required for add_edge")
-            if not request.second_task_id:
-                raise HTTPException(
-                    status_code=400, detail="second_task_id required for add_edge"
-                )
-            result = await dag_repository.add_edge(
-                db, request.dag_id, request.first_task_id, request.second_task_id
+        elif request.action == DagAction.add_edges:
+            # Add multiple edges from first_task_id to each dependency
+            result = await dag_repository.add_edges(
+                db, request.first_task_id, request.dependencies, request.team_id
             )
             return DagResponse(
-                success=True,
-                message="Edge added successfully",
-                dag_id=result.dag_id,
-                new_dag_id=result.new_dag_id
+                success=True, message="Edges added successfully", **result
             )
-        elif request.action == DagAction.delete_edge:
-            if not request.dag_id:
-                raise HTTPException(status_code=400, detail="dag_id required for delete_edge")
-            if not request.second_task_id:
-                raise HTTPException(
-                    status_code=400, detail="second_task_id required for delete_edge"
-                )
-            result = await dag_repository.delete_edge(
-                db, request.dag_id, request.first_task_id, request.second_task_id
+        elif request.action == DagAction.delete_edges:
+            # Remove multiple edges from first_task_id to each dependency
+            result = await dag_repository.delete_edges(
+                db, request.dag_id, request.first_task_id, request.dependencies
             )
             return DagResponse(
-                success=True,
-                message="Edge deleted successfully",
-                dag_id=result.dag_id,
-                new_dag_id=result.new_dag_id
+                success=True, message="Edges deleted successfully", **result
             )
         else:
             raise HTTPException(status_code=400, detail="Invalid action")

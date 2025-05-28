@@ -72,21 +72,16 @@ export interface components {
      * DagAction
      * @enum {string}
      */
-    DagAction: "create" | "add_edge" | "delete_edge";
+    DagAction: "add_edges" | "delete_edges";
     /** DagRequest */
     DagRequest: {
-      /** Dag Id */
-      dag_id?: string | null;
       /**
        * First Task Id
        * Format: uuid
        */
       first_task_id: string;
-      /**
-       * Second Task Id
-       * Format: uuid
-       */
-      second_task_id?: string;
+      /** Dependencies */
+      dependencies: string[];
       /**
        * Team Id
        * Format: uuid
@@ -100,10 +95,6 @@ export interface components {
       success: boolean;
       /** Message */
       message: string;
-      /** Dag Id */
-      dag_id?: string | null;
-      /** New Dag Id */
-      new_dag_id?: string | null;
     };
     /** HTTPValidationError */
     HTTPValidationError: {
