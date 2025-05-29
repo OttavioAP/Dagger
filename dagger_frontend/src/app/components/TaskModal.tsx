@@ -131,6 +131,12 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
     };
     if (mode === 'create') {
       const createdTask = await createTask(request);
+
+      if (!createdTask.id) {
+        console.error('Failed to create task');
+        return;
+      }
+
       // Assign users to task
       if (userIds.length > 0) {
         for (const user_id of userIds) {

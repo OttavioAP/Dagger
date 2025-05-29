@@ -39,8 +39,8 @@ const TaskNode: React.FC<NodeProps<TaskNodeData>> = ({ data }) => {
         )}
       </div>
       {/* React Flow handles for edges */}
-      <Handle type="target" position={Position.Top} className="w-2 h-2 bg-gray-400" />
-      <Handle type="source" position={Position.Bottom} className="w-2 h-2 bg-gray-400" />
+      <Handle type="target" position={Position.Left} className="w-2 h-2 bg-gray-400" />
+      <Handle type="source" position={Position.Right} className="w-2 h-2 bg-gray-400" />
     </div>
   );
 };

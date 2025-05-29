@@ -21,6 +21,20 @@ interface TaskGraphProps {
   onNodeClick?: (taskId: string) => void;
 }
 
+// Color palette for DAGs
+const dagColors = [
+  '#60a5fa', // blue
+  '#f59e42', // orange
+  '#10b981', // green
+  '#f43f5e', // red
+  '#a78bfa', // purple
+  '#fbbf24', // yellow
+  '#6366f1', // indigo
+  '#14b8a6', // teal
+];
+
+const getDagColor = (dagIndex: number) => dagColors[dagIndex % dagColors.length];
+
 function getLayoutedElements(nodes: Node[], edges: Edge[]) {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
@@ -92,7 +106,8 @@ const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick }) =
   // Build edges: all DAG edges
   const edges: Edge[] = useMemo(() => {
     const result: Edge[] = [];
-    dags.forEach(dag => {
+    dags.forEach((dag, dagIndex) => {
+      const color = getDagColor(dagIndex);
       Object.entries(dag.dag_graph).forEach(([from, tos]) => {
         (tos as string[]).forEach((to: string) => {
           result.push({
@@ -100,10 +115,10 @@ const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick }) =
             source: to,
             target: from,
             animated: true,
-            style: { stroke: '#60a5fa', strokeWidth: 2 },
+            style: { stroke: color, strokeWidth: 2 },
             markerEnd: {
               type: MarkerType.ArrowClosed,
-              color: '#60a5fa',
+              color: color,
             },
           });
         });
