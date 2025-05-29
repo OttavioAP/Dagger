@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     if (validSearchType === 'compare') {
       if (!week_id) {
         return NextResponse.json({ error: 'week_id is required for comparison search' }, { status: 400 });
-      }
+    }
     }
 
     // Construct the query parameters

@@ -97,8 +97,8 @@ const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick }) =
         (tos as string[]).forEach((to: string) => {
           result.push({
             id: `${from}->${to}`,
-            source: from,
-            target: to,
+            source: to,
+            target: from,
             animated: true,
             style: { stroke: '#60a5fa', strokeWidth: 2 },
             markerEnd: {

@@ -26,6 +26,7 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
     createDag,
     assignUserToTask,
     removeUserFromTask,
+    refreshDags,
   } = useDag();
   const { teamUsers } = useTeam();
   const { user } = useAuth();
@@ -180,6 +181,7 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
       }
       // handle dependencies: update edges as needed (not implemented here, but you could diff old/new and call 'add_edges'/'delete_edges')
     }
+    refreshDags();
     onClose();
   };
 
