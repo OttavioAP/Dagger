@@ -31,13 +31,16 @@ interface DagContextType {
   refreshDags: () => Promise<void>;
   createDag: (request: DagRequest) => Promise<void>;
   addEdge: (request: DagRequest) => Promise<void>;
-  deleteEdge: (request: DagRequest) => Promise<void>;
+  deleteEdge: (request: DagRequest & { dag_id?: string }) => Promise<void>;
   createTask: (request: TaskRequest) => Promise<Task>;
   assignUserToTask: (request: UserTasksRequest) => Promise<void>;
   removeUserFromTask: (request: UserTasksRequest) => Promise<void>;
   tasksDict: { [key: string]: Task };
   deleteTask: (taskId: string) => Promise<void>;
   updateTask: (request: TaskRequest) => Promise<void>;
+  get_task_dependencies: (taskId: string) => Task[];
+  get_task_users: (taskId: string) => string[];
+  get_dag_id_by_task_id: (taskId: string) => string | undefined;
 }
 
 const DagContext = createContext<DagContextType | undefined>(undefined);
@@ -168,7 +171,7 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...request,
-          action: 'add_edge' as DagAction
+          action: 'add_edges' as DagAction
         })
       });
 
@@ -186,24 +189,22 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Delete an edge from a DAG
-  const deleteEdge = async (request: DagRequest) => {
+  const deleteEdge = async (request: DagRequest & { dag_id?: string }) => {
     try {
       setLoading(true);
       setError(null);
-
       const response = await fetch('/api/dag', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...request,
-          action: 'delete_edge' as DagAction
-        })
+          action: 'delete_edges' as DagAction,
+          ...(request.dag_id ? { dag_id: request.dag_id } : {}),
+        }),
       });
-
       if (!response.ok) {
         throw new Error('Failed to delete edge');
       }
-
       await fetchDags(); // Refresh DAGs after deleting edge
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -353,6 +354,42 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Helper: Get dependencies of a task (returns Task[])
+  const get_task_dependencies = (taskId: string): Task[] => {
+    // Find the DAG that contains this task
+    for (const dag of dags) {
+      // dag.dag_graph: { [from]: to[] }
+      // We want all tasks that are in dag.dag_graph[taskId]
+      const depIds = dag.dag_graph[taskId] as string[] | undefined;
+      if (depIds && depIds.length > 0) {
+        return depIds
+          .map(depId => tasksDict[depId])
+          .filter((t): t is Task => Boolean(t));
+      }
+    }
+    return [];
+  };
+
+  // Helper: Get user IDs assigned to a task
+  const get_task_users = (taskId: string): string[] => {
+    for (const dag of dags) {
+      if (dag.nodes[taskId]) {
+        return dag.nodes[taskId].assigned_users || [];
+      }
+    }
+    return [];
+  };
+
+  // Helper: Get dag_id by task id
+  const get_dag_id_by_task_id = (taskId: string): string | undefined => {
+    for (const dag of dags) {
+      if (dag.dag_graph[taskId]) {
+        return dag.dag_id || undefined;
+      }
+    }
+    return undefined;
+  };
+
   // Initial fetch of DAGs
   useEffect(() => {
     fetchDags();
@@ -371,7 +408,10 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
     removeUserFromTask,
     tasksDict,
     deleteTask,
-    updateTask
+    updateTask,
+    get_task_dependencies,
+    get_task_users,
+    get_dag_id_by_task_id,
   };
 
   return <DagContext.Provider value={value}>{children}</DagContext.Provider>;

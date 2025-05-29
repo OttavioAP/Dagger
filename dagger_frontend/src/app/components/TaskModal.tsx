@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useDag } from '../contexts/dag_context';
 import { useTeam } from '../contexts/team_context';
 import { useAuth } from '../contexts/auth_context';
-import type { Task, TaskRequest, TaskPriority, TaskFocus } from '@/client/types.gen';
+import type { Task, TaskRequest, TaskPriority, TaskFocus, DagAction } from '@/client/types.gen';
 
 
 interface TaskModalProps {
@@ -27,6 +27,9 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
     assignUserToTask,
     removeUserFromTask,
     refreshDags,
+    get_task_dependencies,
+    get_task_users,
+    get_dag_id_by_task_id,
   } = useDag();
   const { teamUsers } = useTeam();
   const { user } = useAuth();
@@ -40,12 +43,20 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
 
 
   // Dependency and user assignment state
-  const [dependencies, setDependencies] = useState<string[]>([]); // task ids
-  const [assignedUsers, setAssignedUsers] = useState<string[]>([]); // user ids
+  const [newDependencies, setNewDependencies] = useState<string[]>([]); // task ids
+  const [newUsers, setNewUsers] = useState<string[]>([]); // user ids
 
-  // For autocomplete
-  const [depInputs, setDepInputs] = useState<(Task | null)[]>([null]);
-  const [userInputs, setUserInputs] = useState(['']);
+  // For edit mode: track initial users/dependencies, and lists to add/remove
+  const initialDependencies = useMemo(() => (mode === 'edit' && task?.id ? get_task_dependencies(task.id).map(t => t.id!).filter(Boolean) : []), [mode, task, get_task_dependencies]);
+  const initialUsers = useMemo(() => (mode === 'edit' && task?.id ? get_task_users(task.id) : []), [mode, task, get_task_users]);
+  const [dependenciesToRemove, setDependenciesToRemove] = useState<string[]>([]);
+  const [usersToRemove, setUsersToRemove] = useState<string[]>([]);
+  const [dependenciesToAdd, setDependenciesToAdd] = useState<string[]>([]);
+  const [usersToAdd, setUsersToAdd] = useState<string[]>([]);
+
+  // UI state for dependency/user fields
+  const [depInputs, setDepInputs] = useState<(Task | null)[]>(mode === 'edit' ? initialDependencies.map(id => tasksDict[id] || null) : [null]);
+  const [userInputs, setUserInputs] = useState<string[]>(mode === 'edit' ? initialUsers.map(uid => teamUsers.find(u => u.id === uid)?.username || '' ) : ['']);
 
   // Helper: get all tasks except this one
   const availableTasks = useMemo(() =>
@@ -59,25 +70,112 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
   // Error state for deadline
   const [deadlineError, setDeadlineError] = useState<string | null>(null);
 
-  // Handlers for dependencies
-  const handleDepInputChange = (idx: number, value: string) => {
-    const newInputs = [...depInputs];
-    // Find the task by name
-    const foundTask = availableTasks.find(t => t.task_name === value);
-    newInputs[idx] = foundTask || null;
-    setDepInputs(newInputs);
-  };
-  const addDepField = () => setDepInputs([...depInputs, null]);
-  const removeDepField = (idx: number) => setDepInputs(depInputs.filter((_, i) => i !== idx));
+  // Show current dependencies and users in edit mode
+  const currentDependencies = useMemo(() => {
+    if (mode === 'edit' && task?.id) {
+      return get_task_dependencies(task.id);
+    }
+    return [];
+  }, [mode, task, get_task_dependencies]);
 
-  // Handlers for users
-  const handleUserInputChange = (idx: number, value: string) => {
-    const newInputs = [...userInputs];
-    newInputs[idx] = value;
-    setUserInputs(newInputs);
+  const currentUsers = useMemo(() => {
+    if (mode === 'edit' && task?.id) {
+      return get_task_users(task.id);
+    }
+    return [];
+  }, [mode, task, get_task_users]);
+
+  // Remove a dependency from UI and track for removal/addition
+  const handleRemoveDependency = (idx: number) => {
+    if (mode === 'create') {
+      // Remove from newDependencies
+      const depId = depInputs[idx]?.id;
+      if (depId) setNewDependencies(prev => prev.filter(id => id !== depId));
+      setDepInputs(inputs => inputs.filter((_, i) => i !== idx));
+    } else if (mode === 'edit') {
+      const depId = depInputs[idx]?.id;
+      if (depId) {
+        if (initialDependencies.includes(depId)) {
+          setDependenciesToRemove(prev => [...new Set([...prev, depId])]);
+        } else {
+          setDependenciesToAdd(prev => prev.filter(id => id !== depId));
+        }
+      }
+      setDepInputs(inputs => inputs.filter((_, i) => i !== idx));
+    }
   };
+
+  // Remove a user from UI and track for removal/addition
+  const handleRemoveUser = (idx: number) => {
+    if (mode === 'create') {
+      const username = userInputs[idx];
+      const userId = availableUsers.find(u => u.username === username)?.id;
+      if (userId) setNewUsers(prev => prev.filter(id => id !== userId));
+      setUserInputs(inputs => inputs.filter((_, i) => i !== idx));
+    } else if (mode === 'edit') {
+      const username = userInputs[idx];
+      const userId = availableUsers.find(u => u.username === username)?.id;
+      if (userId) {
+        if (initialUsers.includes(userId)) {
+          setUsersToRemove(prev => [...new Set([...prev, userId])]);
+        } else {
+          setUsersToAdd(prev => prev.filter(id => id !== userId));
+        }
+      }
+      setUserInputs(inputs => inputs.filter((_, i) => i !== idx));
+    }
+  };
+
+  // Add dependency field
+  const addDepField = () => setDepInputs([...depInputs, null]);
+  // Add user field
   const addUserField = () => setUserInputs([...userInputs, '']);
-  const removeUserField = (idx: number) => setUserInputs(userInputs.filter((_, i) => i !== idx));
+
+  // Handle dependency input change
+  const handleDepInputChange = (idx: number, value: string) => {
+    const foundTask = availableTasks.find(t => t.task_name === value);
+    setDepInputs(inputs => {
+      const newInputs = [...inputs];
+      newInputs[idx] = foundTask || null;
+      return newInputs;
+    });
+    if (foundTask && foundTask.id) {
+      if (mode === 'create') {
+        setNewDependencies(prev => [...new Set([...prev, foundTask.id!])]);
+      } else if (mode === 'edit') {
+        if (!initialDependencies.includes(foundTask.id!) && !dependenciesToAdd.includes(foundTask.id!)) {
+          setDependenciesToAdd(prev => [...new Set([...prev, foundTask.id!])]);
+        }
+        // If user re-adds a dependency previously marked for removal, unmark it
+        if (dependenciesToRemove.includes(foundTask.id!)) {
+          setDependenciesToRemove(prev => prev.filter(id => id !== foundTask.id!));
+        }
+      }
+    }
+  };
+
+  // Handle user input change
+  const handleUserInputChange = (idx: number, value: string) => {
+    setUserInputs(inputs => {
+      const newInputs = [...inputs];
+      newInputs[idx] = value;
+      return newInputs;
+    });
+    const userId = availableUsers.find(u => u.username === value)?.id;
+    if (userId) {
+      if (mode === 'create') {
+        setNewUsers(prev => [...new Set([...prev, userId])]);
+      } else if (mode === 'edit') {
+        if (!initialUsers.includes(userId) && !usersToAdd.includes(userId)) {
+          setUsersToAdd(prev => [...new Set([...prev, userId])]);
+        }
+        // If user re-adds a user previously marked for removal, unmark it
+        if (usersToRemove.includes(userId)) {
+          setUsersToRemove(prev => prev.filter(id => id !== userId));
+        }
+      }
+    }
+  };
 
   // Deadline change handler with validation
   const handleDeadlineChange = (value: string) => {
@@ -110,82 +208,87 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
       setDeadlineError(null);
     }
 
-    // Map userInputs (usernames) to user IDs, filter out invalid/duplicate
-    const userIds = Array.from(new Set(
-      userInputs
-        .map(input => availableUsers.find(u => u.username === input)?.id)
-        .filter((id): id is string => Boolean(id))
-    ));
-
-    const request: TaskRequest = {
-      ...(mode === 'edit' && task?.id ? { task_id: task.id } : {}),
-      task_name: taskName,
-      team_id: user?.team_id,
-      deadline,
-      points,
-      priority,
-      focus,
-      description,
-      notes,
-      action: mode === 'create' ? 'create' : 'edit',
-    };
     if (mode === 'create') {
+      const request: TaskRequest = {
+        task_name: taskName,
+        team_id: user?.team_id,
+        deadline,
+        points,
+        priority,
+        focus,
+        description,
+        notes,
+        action: 'create',
+      };
       const createdTask = await createTask(request);
-
       if (!createdTask.id) {
         console.error('Failed to create task');
         return;
       }
-
-      // Assign users to task
-      if (userIds.length > 0) {
-        for (const user_id of userIds) {
-          await assignUserToTask({ user_id, task_id: createdTask.id!, action: 'add' });
-        }
+      // Add users
+      for (const user_id of newUsers) {
+        await assignUserToTask({ user_id, task_id: createdTask.id!, action: 'add' });
       }
-      // handle dependencies: if any, create dag or add edges
-      if (depInputs.length > 0 && depInputs.some(input => input)) {
-        const dependencyTaskIds = depInputs
-          .map(input => input?.id)
-          .filter((id): id is string => Boolean(id));
-        if (dependencyTaskIds.length > 0 && createdTask.id && user?.team_id) {
-          const dagReq = {
-            first_task_id: createdTask.id,
-            dependencies: dependencyTaskIds,
-            team_id: user.team_id,
-            action: 'add_edges',
-          };
-          const response = await fetch('/api/dag', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dagReq),
-          });
-          if (response.ok) {
-            console.log('edges successfully created');
-          } else {
-            console.error('Failed to create edges');
-          }
-        }
+      // Add dependencies
+      if (newDependencies.length > 0) {
+        const dagReq = {
+          first_task_id: createdTask.id,
+          dependencies: newDependencies,
+          team_id: user?.team_id!,
+          action: 'add_edges' as DagAction,
+        };
+        await addEdge(dagReq);
       }
-    } else {
+    } else if (mode === 'edit' && task?.id) {
+      const request: TaskRequest = {
+        task_id: task.id,
+        task_name: taskName,
+        team_id: user?.team_id,
+        deadline,
+        points,
+        priority,
+        focus,
+        description,
+        notes,
+        action: 'edit',
+      };
       await updateTask(request);
-      // Assign users to task (add new, remove missing)
-      if (task?.id) {
-        const prevUserIds = (task as any).assigned_users || [];
-        // Add new users
-        for (const user_id of userIds) {
-          if (!prevUserIds.includes(user_id)) {
-            await assignUserToTask({ user_id, task_id: task.id, action: 'add' });
-          }
-        }
-        // Remove users not in the new list
-        for (const user_id of prevUserIds) {
-          if (!userIds.includes(user_id)) {
-            await removeUserFromTask({ user_id, task_id: task.id, action: 'delete' });
+      // Remove users first
+      for (const user_id of usersToRemove) {
+        await removeUserFromTask({ user_id, task_id: task.id, action: 'delete' });
+      }
+      // Remove dependencies first
+      if (dependenciesToRemove.length > 0) {
+        const dag_id = get_dag_id_by_task_id(task.id);
+        if (dag_id) {
+          for (const depTaskId of dependenciesToRemove) {
+            await deleteEdge({
+              team_id: user?.team_id!,
+              first_task_id: task.id,
+              dependencies: [depTaskId],
+              action: 'delete_edges',
+              dag_id,
+            });
           }
         }
       }
-      // handle dependencies: update edges as needed (not implemented here, but you could diff old/new and call 'add_edges'/'delete_edges')
+      // Add users
+      for (const user_id of usersToAdd) {
+        await assignUserToTask({ user_id, task_id: task.id, action: 'add' });
+      }
+      // Add dependencies
+      if (dependenciesToAdd.length > 0) {
+        const dag_id = get_dag_id_by_task_id(task.id);
+        if (dag_id) {
+          await addEdge({
+            team_id: user?.team_id!,
+            first_task_id: task.id,
+            dependencies: dependenciesToAdd,
+            action: 'add_edges' as DagAction,
+            dag_id,
+          });
+        }
+      }
     }
     refreshDags();
     onClose();
@@ -252,7 +355,7 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
                   onChange={e => handleDepInputChange(idx, e.target.value)}
                   list={`dep-tasks-${idx}`}
                 />
-                <datalist id={`dep-tasks-${idx}`}>
+                <datalist id={`dep-tasks-${idx}`}> 
                   {availableTasks
                     .filter(t => {
                       const val = input ? input.task_name : '';
@@ -262,7 +365,10 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
                       <option key={t.id} value={t.task_name} />
                     ))}
                 </datalist>
-                <button type="button" onClick={() => removeDepField(idx)} className="text-red-400">Remove</button>
+                {/* Only show remove button if this field has a value */}
+                {input && (
+                  <button type="button" onClick={() => handleRemoveDependency(idx)} className="text-red-400">Remove</button>
+                )}
               </div>
             ))}
             <button type="button" onClick={addDepField} className="text-blue-400">+ Add Dependency</button>
@@ -280,14 +386,17 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
                   list={`user-list-${idx}`}
                   autoComplete="off"
                 />
-                <datalist id={`user-list-${idx}`}>
+                <datalist id={`user-list-${idx}`}> 
                   {availableUsers
                     .filter(u => u.username.toLowerCase().includes(input.toLowerCase()))
                     .map(u => (
                       <option key={u.id} value={u.username} />
                     ))}
                 </datalist>
-                <button type="button" onClick={() => removeUserField(idx)} className="text-red-400">Remove</button>
+                {/* Only show remove button if this field has a value */}
+                {input && (
+                  <button type="button" onClick={() => handleRemoveUser(idx)} className="text-red-400">Remove</button>
+                )}
               </div>
             ))}
             <button type="button" onClick={addUserField} className="text-blue-400">+ Add User</button>

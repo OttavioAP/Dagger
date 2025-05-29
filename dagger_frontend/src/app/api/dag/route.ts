@@ -4,8 +4,13 @@ import type { DagRequest } from '@/client/types.gen';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as DagRequest;
-    const response = await dagActionDagPost({ body });
+    const body = (await req.json()) as DagRequest & { dag_id?: string };
+    // If action is delete_edges and dag_id is present, include it in the request
+    const requestBody =
+      body.action === 'delete_edges' && body.dag_id
+        ? { ...body, dag_id: body.dag_id }
+        : body;
+    const response = await dagActionDagPost({ body: requestBody });
     return NextResponse.json(response.data, { status: 200 });
   } catch (error: unknown) {
     const message =

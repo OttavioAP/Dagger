@@ -20,6 +20,7 @@ class DagAction(str, Enum):
 class DagRequest(BaseModel):
     first_task_id: uuid.UUID
     dependencies: List[uuid.UUID]
+    dag_id: uuid.UUID = None
     team_id: uuid.UUID
     action: DagAction
 
@@ -38,6 +39,7 @@ tasks_repository = TasksRepository()
 async def dag_action(request: DagRequest, db: AsyncSession = Depends(get_db)):
     try:
         logger.info(f"Received DAG action request: {request.model_dump()}")
+
         if request.action == DagAction.add_edges:
             # Add multiple edges from first_task_id to each dependency
             result = await dag_repository.add_edges(
@@ -47,6 +49,10 @@ async def dag_action(request: DagRequest, db: AsyncSession = Depends(get_db)):
                 success=True, message="Edges added successfully", **result
             )
         elif request.action == DagAction.delete_edges:
+            if request.dag_id is None:
+                raise HTTPException(
+                    status_code=400, detail="DAG ID is required on delete_edges"
+                )
             # Remove multiple edges from first_task_id to each dependency
             result = await dag_repository.delete_edges(
                 db, request.dag_id, request.first_task_id, request.dependencies

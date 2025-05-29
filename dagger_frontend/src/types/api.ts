@@ -83,6 +83,11 @@ export interface components {
       /** Dependencies */
       dependencies: string[];
       /**
+       * Dag Id
+       * Format: uuid
+       */
+      dag_id?: string;
+      /**
        * Team Id
        * Format: uuid
        */

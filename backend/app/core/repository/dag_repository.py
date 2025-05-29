@@ -163,6 +163,14 @@ class DagRepository:
                 dep_str = str(dep)
                 if first in dag_graph and dep_str in dag_graph[first]:
                     dag_graph[first].remove(dep_str)
+                else:
+                    logger.error(
+                        f"Edge from {first} to {dep_str} not found in DAG {dag_id} during delete_edges operation."
+                    )
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Edge from {first} to {dep_str} not found in DAG {dag_id}",
+                    )
             # Check for disconnected components (split)
             components = connected_components(dag_graph)
 

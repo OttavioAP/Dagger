@@ -4,8 +4,17 @@ import React, { useState, useEffect } from 'react';
 import { useData } from '../contexts/data_context';
 import WeekComponent from '../components/week';
 import type { Week } from '@/client/types.gen';
+import { DataProvider } from '../contexts/data_context';
 
 export default function DataView() {
+  return (
+    <DataProvider>
+      <DataViewContent />
+    </DataProvider>
+  );
+}
+
+function DataViewContent() {
   const { weeks, loading, error } = useData();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState<Date[]>([]);

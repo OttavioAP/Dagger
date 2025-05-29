@@ -9,6 +9,7 @@ export type DagAction = 'add_edges' | 'delete_edges';
 export type DagRequest = {
     first_task_id: string;
     dependencies: Array<string>;
+    dag_id?: string;
     team_id: string;
     action: DagAction;
 };

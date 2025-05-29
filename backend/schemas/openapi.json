@@ -980,6 +980,11 @@
             "type": "array",
             "title": "Dependencies"
           },
+          "dag_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dag Id"
+          },
           "team_id": {
             "type": "string",
             "format": "uuid",
