@@ -126,11 +126,6 @@ export default function ProfilePage() {
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart
                     data={chartData.collaborators
-                      .map((c: any) => {
-                        // Try to resolve c.name (which may be a UUID) to a username from teamUsers
-                        const user = teamUsers.find(u => u.id === c.name);
-                        return { name: user ? user.username : (c.name || 'Unknown'), value: c.value };
-                      })
                       .sort((a: any, b: any) => b.value - a.value)
                       .slice(0, 10)
                     }

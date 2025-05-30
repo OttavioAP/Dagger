@@ -72,8 +72,10 @@ function getChartData(weeks: any[], teamUsers: any[] = [], tasksDict: Record<str
     if (Array.isArray(week.collaborators)) {
       week.collaborators.forEach((collab: any, idx: number) => {
         let name = 'Unknown';
-        if (typeof collab === 'string') {
-          name = userIdToName[String(collab)] || collab;
+        if (typeof collab === 'string' || typeof collab === 'number') {
+          // Always compare as string
+          const user = teamUsers.find(u => String(u.id) === String(collab));
+          name = user ? user.username : 'Unknown';
         } else if (collab && typeof collab === 'object') {
           name = collab.username || collab.name || collab.id || 'Unknown';
         }
