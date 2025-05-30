@@ -7,11 +7,12 @@ import uuid
 
 class user(BaseModel):
     """A user represents a team member in the system.
-    
+
     Users are the individual participants who work on tasks within teams. Each user must belong
     to exactly one team, and can collaborate on tasks within that team. Users are identified
     by their unique username and UUID.
     """
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     username: str
@@ -25,7 +26,7 @@ class user(BaseModel):
 
     @classmethod
     def from_orm(cls, obj):
-        return cls(username=obj.username, id=obj.id)
+        return cls(username=obj.username, id=obj.id, team_id=obj.team_id)
 
 
 class UserSchema(Base):

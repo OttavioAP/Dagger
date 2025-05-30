@@ -4,6 +4,7 @@ from app.core.repository.base_repository import BaseRepository
 from app.schema.repository.team import TeamSchema, team
 from fastapi import HTTPException
 from app.core.logger import logger
+from app.core.repository.user_repository import UserSchema
 
 
 class TeamRepository(BaseRepository[TeamSchema]):
@@ -40,4 +41,22 @@ class TeamRepository(BaseRepository[TeamSchema]):
             return result
         except Exception as e:
             logger.error(f"Error fetching teams in repository: {e}")
+            raise
+
+    async def get_team_by_user_id(self, db, user_id: str) -> team | None:
+        try:
+            logger.info(f"Fetching team for user_id: {user_id}")
+            query = (
+                select(self.model)
+                .join(UserSchema, UserSchema.team_id == self.model.id)
+                .where(UserSchema.id == user_id)
+            )
+            result = await db.execute(query)
+            obj = result.scalar_one_or_none()
+            if obj is None:
+                logger.info(f"No team found for user_id: {user_id}")
+                return None
+            return team.from_orm(obj)
+        except Exception as e:
+            logger.error(f"Error fetching team by user_id in repository: {e}")
             raise

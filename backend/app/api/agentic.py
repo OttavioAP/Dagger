@@ -8,19 +8,39 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 from datetime import datetime
 from enum import Enum
+from fastapi.responses import StreamingResponse
+import time
 
 router = APIRouter(prefix="/agentic", tags=["agentic"])
 week_repository = WeekRepository()
+
 
 class SearchType(str, Enum):
     REGULAR = "regular"
     SEMANTIC = "semantic"
     COMPARE = "compare"
 
+
 class SearchResponse(BaseModel):
     reply: str
     weeks: List[week]
     total_count: int
+
+
+def generate_streamed_response(query: str):
+    # Simulate a token stream (replace with real logic as needed)
+    tokens = ["Hello", ",", " I", " am", " your", " chatbot", "."]
+    for token in tokens:
+        yield f"data: {token}\n\n"
+        time.sleep(0.3)
+
+
+@router.get("/chat")
+def chat(query: str):
+    return StreamingResponse(
+        generate_streamed_response(query), media_type="text/event-stream"
+    )
+
 
 @router.get("/search", response_model=SearchResponse)
 async def agentic_search(
@@ -36,13 +56,15 @@ async def agentic_search(
     missed_deadlines_range: Optional[Tuple[int, int]] = Query(None),
     completed_task_range: Optional[Tuple[int, int]] = Query(None),
     points_range: Optional[Tuple[int, int]] = Query(None),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     try:
         if search_type == SearchType.REGULAR:
             if not query:
-                raise HTTPException(status_code=400, detail="query is required for regular search")
-            
+                raise HTTPException(
+                    status_code=400, detail="query is required for regular search"
+                )
+
             weeks = await week_repository.non_semantic_week_search(
                 db=db,
                 number_of_weeks=number_of_weeks,
@@ -53,18 +75,20 @@ async def agentic_search(
                 collaborators=collaborators,
                 missed_deadlines_range=missed_deadlines_range,
                 completed_task_range=completed_task_range,
-                points_range=points_range
+                points_range=points_range,
             )
             return SearchResponse(
                 reply=f"Regular search results for query: {query}",
                 weeks=weeks,
-                total_count=len(weeks)
+                total_count=len(weeks),
             )
 
         elif search_type == SearchType.SEMANTIC:
             if not query:
-                raise HTTPException(status_code=400, detail="query is required for semantic search")
-            
+                raise HTTPException(
+                    status_code=400, detail="query is required for semantic search"
+                )
+
             weeks = await week_repository.search_weeks(
                 db=db,
                 query=query,
@@ -75,23 +99,25 @@ async def agentic_search(
                 collaborators=collaborators,
                 missed_deadlines_range=missed_deadlines_range,
                 completed_task_range=completed_task_range,
-                points_range=points_range
+                points_range=points_range,
             )
             return SearchResponse(
                 reply=f"Semantic search results for query: {query}",
                 weeks=weeks,
-                total_count=len(weeks)
+                total_count=len(weeks),
             )
 
         elif search_type == SearchType.COMPARE:
             if not week_id:
-                raise HTTPException(status_code=400, detail="week_id is required for comparison search")
-            
+                raise HTTPException(
+                    status_code=400, detail="week_id is required for comparison search"
+                )
+
             # Get the vector of the reference week
             reference_week = await week_repository.get_by_id(db, week_id)
             if not reference_week:
                 raise HTTPException(status_code=404, detail="Reference week not found")
-            
+
             weeks = await week_repository.compare_weeks(
                 db=db,
                 vector=reference_week.embedding,
@@ -102,17 +128,17 @@ async def agentic_search(
                 collaborators=collaborators,
                 missed_deadlines_range=missed_deadlines_range,
                 completed_task_range=completed_task_range,
-                points_range=points_range
+                points_range=points_range,
             )
             return SearchResponse(
                 reply=f"Comparison search results for week: {week_id}",
                 weeks=weeks,
-                total_count=len(weeks)
+                total_count=len(weeks),
             )
 
         else:
             raise HTTPException(status_code=400, detail="Invalid search type")
-            
+
     except HTTPException as e:
         raise e
     except Exception as e:

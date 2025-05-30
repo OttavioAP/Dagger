@@ -21,21 +21,14 @@ class SchedulerService:
         try:
             # Get database session
             async with self.db_service.AsyncSessionLocal() as db:
-                # Calculate week boundaries (Saturday midnight to next Saturday midnight)
-                now = datetime.now()
-                days_until_saturday = (5 - now.weekday()) % 7  # 5 is Saturday
-                end_of_week = (now + timedelta(days=days_until_saturday)).replace(
-                    hour=0, minute=0, second=0, microsecond=0
-                )
+                # Set week boundaries: now is end_of_week, one week ago is start_of_week
+                end_of_week = datetime.now()
                 start_of_week = end_of_week - timedelta(days=7)
 
                 # Create and analyze the week
                 week_obj = await analyze_and_create_week(
                     db, start_of_week, end_of_week, user_id
                 )
-
-                # Encode and store the week with vector embedding
-                await self.week_repository.encode_store_week(db, week_obj)
 
                 logger.info(f"Successfully processed week for user {user_id}")
         except Exception as e:

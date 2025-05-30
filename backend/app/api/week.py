@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from app.services.database_service import get_db
@@ -12,6 +12,7 @@ from typing import Tuple
 import json
 from pathlib import Path
 from app.services.week_service import encode_and_store
+from app.services.scheduler_service import scheduler_service
 
 router = APIRouter(prefix="/week", tags=["week"])
 week_repository = WeekRepository()
@@ -114,31 +115,40 @@ async def get_weeks(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/import-weeks-from-json")
-async def import_weeks_from_json(db: AsyncSession = Depends(get_db)):
+# @router.post("/import-weeks-from-json")
+# async def import_weeks_from_json(db: AsyncSession = Depends(get_db)):
+#     try:
+#         """
+#         Import all weeks from weeks.json, parse as week Pydantic models, encode, and store each.
+#         """
+#         weeks_path = Path("/home/argos/Dagger/db/example_data/weeks.json")
+#         if not weeks_path.exists():
+#             raise HTTPException(status_code=404, detail="weeks.json not found")
+#         with weeks_path.open() as f:
+#             data = json.load(f)
+#         weeks_raw = data.get("weeks", [])
+#         week_objs = []
+#         for week_dict in weeks_raw:
+#             # Parse UUIDs in collaborators, missed_deadlines, completed_tasks
+#             for key in ["collaborators", "missed_deadlines", "completed_tasks"]:
+#                 if week_dict.get(key) is not None:
+#                     week_dict[key] = [uuid.UUID(x) for x in week_dict[key]]
+#             # Parse user_id and id
+#             if week_dict.get("user_id"):
+#                 week_dict["user_id"] = uuid.UUID(week_dict["user_id"])
+#             if week_dict.get("id"):
+#                 week_dict["id"] = uuid.UUID(week_dict["id"])
+#             week_objs.append(week(**week_dict))
+#         # Encode all weeks and get (week, vector) tuples
+#         await encode_and_store(week_objs, db)
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/test_user_week_create")
+async def test_user_week_create(user_id: uuid.UUID = Body(..., embed=True)):
     try:
-        """
-        Import all weeks from weeks.json, parse as week Pydantic models, encode, and store each.
-        """
-        weeks_path = Path("/home/argos/Dagger/db/example_data/weeks.json")
-        if not weeks_path.exists():
-            raise HTTPException(status_code=404, detail="weeks.json not found")
-        with weeks_path.open() as f:
-            data = json.load(f)
-        weeks_raw = data.get("weeks", [])
-        week_objs = []
-        for week_dict in weeks_raw:
-            # Parse UUIDs in collaborators, missed_deadlines, completed_tasks
-            for key in ["collaborators", "missed_deadlines", "completed_tasks"]:
-                if week_dict.get(key) is not None:
-                    week_dict[key] = [uuid.UUID(x) for x in week_dict[key]]
-            # Parse user_id and id
-            if week_dict.get("user_id"):
-                week_dict["user_id"] = uuid.UUID(week_dict["user_id"])
-            if week_dict.get("id"):
-                week_dict["id"] = uuid.UUID(week_dict["id"])
-            week_objs.append(week(**week_dict))
-        # Encode all weeks and get (week, vector) tuples
-        return await encode_and_store(week_objs, db)
+        await scheduler_service.process_user_week(user_id)
+        return {"status": "success", "message": f"Processed week for user {user_id}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

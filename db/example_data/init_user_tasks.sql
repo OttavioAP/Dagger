@@ -1,3 +1,9 @@
 INSERT INTO user_tasks (user_id, task_id, assigned_at) VALUES
   ('3fa85f64-5717-4562-b3fc-2c963f66afa6', '11111111-1111-1111-1111-111111111111',  '2025-05-25T09:00:00Z'),
   ('4fa85f64-5717-4562-b3fc-2c963f66afa7', '22222222-2222-2222-2222-222222222222',  '2025-05-26T10:00:00Z');
+
+-- Assign all tasks with team_id = '8fa85f64-5717-4562-b3fc-2c963f66afc3' to Ianeta
+INSERT INTO user_tasks (user_id, task_id)
+SELECT '9fa85f64-5717-4562-b3fc-2c963f66afc4', id
+FROM tasks
+WHERE team_id = '8fa85f64-5717-4562-b3fc-2c963f66afc3';

@@ -200,3 +200,37 @@ class TasksRepository(BaseRepository[TaskSchema]):
                 status_code=500,
                 detail=f"Error getting unfinished tasks for user before: {e}",
             )
+
+    async def get_relevant_tasks_for_week(self, db, user_id, start_date, end_date):
+        """
+        Return all tasks for a user that are either unfinished OR were finished between start_date and end_date.
+        """
+        try:
+            from app.core.repository.user_tasks_repository import UserTasksRepository
+
+            user_tasks_repo = UserTasksRepository()
+            task_ids = await user_tasks_repo.get_task_ids_for_user(db, user_id)
+            if not task_ids:
+                return []
+            result = await db.execute(
+                select(TaskSchema).where(
+                    TaskSchema.id.in_(task_ids),
+                    (
+                        (TaskSchema.date_of_completion == None)
+                        | (
+                            (TaskSchema.date_of_completion >= start_date)
+                            & (TaskSchema.date_of_completion <= end_date)
+                        )
+                    ),
+                )
+            )
+            return [task.from_orm(obj) for obj in result.scalars().all()]
+        except Exception as e:
+            logger.error(
+                f"Error getting relevant tasks for user {user_id} in week: {e}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error getting relevant tasks for user in week: {e}",
+            )

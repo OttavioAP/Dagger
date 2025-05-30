@@ -26,11 +26,14 @@ class UserRepository(BaseRepository[UserSchema]):
             logger.error(f"Error getting user by username: {e}")
             raise HTTPException(status_code=404, message=str(e))
 
-    async def get_user(self, db, id: str) -> user:
+    async def get_user(self, db, id: str) -> user | None:
         id_value = self._convert_id(id)
         query = select(self.model).where(self.model.id == id_value)
         result = await db.execute(query)
-        return result.scalar_one_or_none()
+        obj = result.scalar_one_or_none()
+        if obj is None:
+            return None
+        return user.from_orm(obj)
 
     async def update_user(self, db, user: user) -> user:
         # Convert the user data, excluding None values
