@@ -11,6 +11,7 @@ import uuid
 from app.core.repository.week_repository import WeekRepository
 from app.schema.repository.week import week
 from app.core.logger import logger
+from app.core.repository.user_repository import UserRepository
 
 
 class SearchWeeksTool(AbstractTool):
@@ -51,7 +52,7 @@ class SearchWeeksTool(AbstractTool):
                     ),
                     "collaborators": ToolParameterProperty(
                         type="array",
-                        description="List of collaborator user IDs (UUIDs).",
+                        description="List of collaborator usernames.",
                         items={"type": "string"},
                         default=None,
                     ),
@@ -91,25 +92,38 @@ class SearchWeeksTool(AbstractTool):
         number_of_weeks: int = 5,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        collaborators: Optional[List[str]] = None,
+        collaborators: Optional[List[str]] = None,  # usernames
         missed_deadlines_range: Optional[List[int]] = None,
         completed_task_range: Optional[List[int]] = None,
         points_range: Optional[List[int]] = None,
         db=None,  # db session should be injected by the caller
     ) -> List[week]:
         """
-        Search weeks using semantic search and metadata filters. user_id is required. number_of_weeks is optional and defaults to 5.
+        Search weeks using semantic search and metadata filters. user_id is required. number_of_weeks is optional and defaults to 5. Collaborators is a list of usernames.
         """
         try:
             repo = WeekRepository()
+            user_repo = UserRepository()
             # Convert string dates to datetime
             start_dt = datetime.fromisoformat(start_date) if start_date else None
             end_dt = datetime.fromisoformat(end_date) if end_date else None
             # Convert string UUIDs to UUID objects
             user_uuid = uuid.UUID(user_id)
-            collaborators_uuids = (
-                [uuid.UUID(c) for c in collaborators] if collaborators else None
-            )
+            # Convert collaborator usernames to UUIDs
+            collaborators_uuids = None
+            if collaborators:
+                collaborators_uuids = []
+                for username in collaborators:
+                    user_obj = await user_repo.get_by_username(db, username)
+                    if user_obj and hasattr(user_obj, "id"):
+                        collaborators_uuids.append(user_obj.id)
+                        logger.info(
+                            f"Resolved collaborator username '{username}' to id '{user_obj.id}'"
+                        )
+                    else:
+                        logger.warning(
+                            f"Could not resolve collaborator username '{username}' to a user id"
+                        )
             # Convert ranges
             missed_range = (
                 tuple(missed_deadlines_range) if missed_deadlines_range else None

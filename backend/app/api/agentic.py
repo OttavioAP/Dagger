@@ -13,6 +13,8 @@ import time
 from app.services.llm_service import LLMService
 from app.schema.llm.message import Message
 from app.core.tools.search_weeks_tool import SearchWeeksTool
+from app.core.agentic.agent_prompts.system_prompts import SystemPrompts
+from app.core.repository.user_repository import UserRepository
 
 router = APIRouter(prefix="/agentic", tags=["agentic"])
 week_repository = WeekRepository()
@@ -39,18 +41,30 @@ def generate_streamed_response(query: str):
 
 
 @router.get("/chat")
-async def chat(query: str, user_id: str):
+async def chat(query: str, user_id: str, db: AsyncSession = Depends(get_db)):
     """
     Chat endpoint that takes a string query and required user_id, calls the LLM with SearchWeeksTool, and returns the response string.
     """
     llm = LLMService()
     import json
 
+    # Get username from user_id
+    user_repo = UserRepository()
+    user_obj = await user_repo.get_user(db, user_id)
+    if not user_obj:
+        raise HTTPException(status_code=404, detail="User not found")
+    username = user_obj.username
+
+    # Get the system prompt
+    system_prompt = await SystemPrompts.chat_system_system_prompt(db, username)
+
     user_message = Message(
         role="user", content=json.dumps({"query": query, "user_id": user_id})
     )
-    # Call the LLM with the SearchWeeksTool available
-    response = await llm.query_llm(messages=[user_message], tools=["SearchWeeksTool"])
+    # Call the LLM with the SearchWeeksTool available and system prompt injected
+    response = await llm.query_llm(
+        messages=[user_message], tools=["SearchWeeksTool"], system_prompt=system_prompt
+    )
     # If the response is a Message object, return its content; if dict, return as string
     if hasattr(response, "content"):
         return {"response": response.content}

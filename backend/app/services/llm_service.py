@@ -109,12 +109,20 @@ class LLMService:
         messages: Message | list[Message],
         json_response: bool = False,
         tools: Optional[str | list[str]] = None,
+        system_prompt: Optional[str] = None,
         **kwargs,
     ) -> Message:
         client = self._client()
 
         if isinstance(messages, Message):
             messages = [messages]
+
+        if system_prompt:
+            # Insert system prompt as the first message
+            from app.schema.llm.message import Message as LLMMessage
+
+            system_message = LLMMessage(role="system", content=system_prompt)
+            messages = [system_message] + messages
 
         if isinstance(tools, str):
             tools = [tools]
