@@ -5,6 +5,7 @@ import { AuthProvider } from './contexts/auth_context';
 import { TeamProvider } from './contexts/team_context';
 import NavBar from './components/NavBar';
 import { DagProvider } from './contexts/dag_context';
+import { DataProvider } from './contexts/data_context';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,12 +28,14 @@ export default function RootLayout({
         <AuthProvider>
           <TeamProvider>
             <DagProvider>
-              <div className="flex flex-col min-h-screen">
-                <NavBar />
-                <main className="flex-1 overflow-hidden pt-16">
-                  {children}
-                </main>
-              </div>
+              <DataProvider>
+                <div className="flex flex-col min-h-screen">
+                  <NavBar />
+                  <main className="flex-1 overflow-hidden pt-16">
+                    {children}
+                  </main>
+                </div>
+              </DataProvider>
             </DagProvider>
           </TeamProvider>
         </AuthProvider>
