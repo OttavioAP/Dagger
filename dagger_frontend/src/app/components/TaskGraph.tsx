@@ -1,7 +1,8 @@
+'use client';
 // NOTE: You must install reactflow and dagre: npm install reactflow dagre
 // For types: npm install --save-dev @types/dagre
-import React, { useMemo, useState } from 'react';
-import ReactFlow, { Background, Controls, Edge, Node, Position, MarkerType } from 'reactflow';
+import React, { useMemo, useState, useEffect } from 'react';
+import ReactFlow, { Background, Controls, Edge, Node, Position, MarkerType, useReactFlow } from 'reactflow';
 import 'reactflow/dist/style.css';
 import dagre from 'dagre';
 import TaskNode from './TaskNode';
@@ -121,6 +122,7 @@ const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick, onC
   const { currentTeam, teamUsers } = useTeam();
   const { get_task_users } = useDag();
   const { user } = useAuth();
+  const { fitView } = useReactFlow();
 
   // Filter modal state
   const [showFilter, setShowFilter] = useState(false);
@@ -245,6 +247,11 @@ const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick, onC
 
   // Layout
   const layoutedNodes = useMemo(() => getLayoutedElements(nodes, edges, visibleDags[0]), [nodes, edges, visibleDags]);
+
+  // Center the graph whenever nodes or edges change
+  useEffect(() => {
+    fitView({ padding: 0.2, includeHiddenNodes: false });
+  }, [layoutedNodes, edges, fitView]);
 
   return (
     <div className="relative w-screen" style={{ height: 'calc(100vh - 4rem)', background: '#18181b', borderRadius: '1rem' }}>

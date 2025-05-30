@@ -1,3 +1,4 @@
+'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useDag } from '../contexts/dag_context';
 import { useTeam } from '../contexts/team_context';

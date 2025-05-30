@@ -1,3 +1,4 @@
+'use client';
 // NOTE: You must install reactflow: npm install reactflow
 import React from 'react';
 import type { NodeProps } from 'reactflow';

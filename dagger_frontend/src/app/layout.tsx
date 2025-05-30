@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from './contexts/auth_context';
-import { TeamProvider } from './contexts/team_context';
 import NavBar from './components/NavBar';
-import { DagProvider } from './contexts/dag_context';
-import { DataProvider } from './contexts/data_context';
+import ContextProviders from './components/ContextProviders';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,20 +22,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} antialiased bg-[#181A1B]`}>
-        <AuthProvider>
-          <TeamProvider>
-            <DagProvider>
-              <DataProvider>
-                <div className="flex flex-col min-h-screen">
-                  <NavBar />
-                  <main className="flex-1 overflow-hidden pt-16">
-                    {children}
-                  </main>
-                </div>
-              </DataProvider>
-            </DagProvider>
-          </TeamProvider>
-        </AuthProvider>
+        <ContextProviders>
+          <div className="flex flex-col min-h-screen">
+            <NavBar />
+            <main className="flex-1 overflow-hidden pt-16">
+              {children}
+            </main>
+          </div>
+        </ContextProviders>
       </body>
     </html>
   );
