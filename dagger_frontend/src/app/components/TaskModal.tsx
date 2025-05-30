@@ -66,9 +66,9 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
   );
   const [userInputs, setUserInputs] = useState<string[]>(mode === 'edit' ? initialUsers.map(uid => teamUsers.find(u => u.id === uid)?.username || '' ) : ['']);
 
-  // Helper: get all tasks except this one
+  // Helper: get all tasks except this one, and only unfinished
   const availableTasks = useMemo(() =>
-    Object.values(tasksDict).filter(t => t.id !== task?.id),
+    Object.values(tasksDict).filter(t => t.id !== task?.id && !t.date_of_completion),
     [tasksDict, task?.id]
   );
 
@@ -144,11 +144,11 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
     // Always update the input value
     setDepInputs(inputs => {
       const newInputs = [...inputs];
-      const foundTask = availableTasks.find(t => t.task_name === value);
+      const foundTask = availableTasks.find(t => t.task_name === value && !t.date_of_completion);
       newInputs[idx] = { value, task: foundTask || null };
       return newInputs;
     });
-    const foundTask = availableTasks.find(t => t.task_name === value);
+    const foundTask = availableTasks.find(t => t.task_name === value && !t.date_of_completion);
     if (foundTask && foundTask.id) {
       if (mode === 'create') {
         setNewDependencies(prev => [...new Set([...prev, foundTask.id!])]);
@@ -201,6 +201,22 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
     setDeadlineError(null);
     setDeadline(value);
   };
+
+  // Only allow completion of leaves
+  const isLeaf = useMemo(() => {
+    if (!task || !task.id) return false;
+    // Find the DAG this task belongs to
+    const dag = dags.find(d => d.nodes[task.id as string]);
+    if (!dag) return false;
+    // A task is a leaf if no unfinished tasks depend on it (i.e., no unfinished task lists this task as a dependency)
+    return !Object.entries(dag.nodes).some(
+      ([otherId, t]) =>
+        otherId !== task.id &&
+        !t.date_of_completion &&
+        Array.isArray(dag.dag_graph[otherId]) &&
+        (dag.dag_graph[otherId] as string[]).includes(task.id as string)
+    );
+  }, [task, dags]);
 
   // Modal logic
   const handleSubmit = async () => {
@@ -470,9 +486,9 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
               <button
                 onClick={handleComplete}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded w-full font-semibold"
-                disabled={!!task?.date_of_completion}
+                disabled={!!task?.date_of_completion || !isLeaf}
               >
-                {task?.date_of_completion ? 'Task Completed' : 'Mark as Complete'}
+                {task?.date_of_completion ? 'Task Completed' : !isLeaf ? 'Only leaves can be completed' : 'Mark as Complete'}
               </button>
             </>
           )}

@@ -64,19 +64,22 @@ function getLeafTasks(dag: DagWithDetails): string[] {
   );
 }
 
-// 2. Walk Dependency Chains (DFS from leaf, skip completed, follow downstream dependencies)
+// 2. Walk Dependency Chains (DFS from leaf, skip completed, traverse upstream)
 function getAllDependencyChains(taskId: string, dag: DagWithDetails): string[][] {
   const chains: string[][] = [];
   function dfs(current: string, path: string[]) {
-    // Follow downstream dependencies (tasks this task depends on)
-    const deps = (dag.dag_graph[current] || []).filter(
-      depId => !dag.nodes[depId]?.date_of_completion
-    );
-    if (deps.length === 0) {
+    // Find all tasks where current is a dependency (i.e., go upstream)
+    const parents = Object.entries(dag.dag_graph)
+      .filter(([from, toList]) =>
+        (toList as string[]).includes(current) &&
+        !dag.nodes[from]?.date_of_completion
+      )
+      .map(([from]) => from);
+    if (parents.length === 0) {
       chains.push([...path, current]);
     } else {
-      for (const dep of deps) {
-        dfs(dep, [...path, current]);
+      for (const parent of parents) {
+        dfs(parent, [...path, current]);
       }
     }
   }
@@ -84,12 +87,13 @@ function getAllDependencyChains(taskId: string, dag: DagWithDetails): string[][]
   return chains;
 }
 
-// 3. Calculate "Behind Score" for a Chain (skip completed)
+// 3. Calculate "Behind Score" for a Chain (skip completed, clamp slack)
 function calculateBehindScore(chain: string[], dag: DagWithDetails): number {
   let totalPoints = 0;
   let earliestDeadline: Date | null = null;
   for (const taskId of chain) {
     const task = dag.nodes[taskId];
+    if (!task) continue;
     if (task.date_of_completion) continue;
     totalPoints += task.points || 0;
     const deadline = task.deadline ? new Date(task.deadline) : null;
@@ -98,9 +102,11 @@ function calculateBehindScore(chain: string[], dag: DagWithDetails): number {
     }
   }
   if (!earliestDeadline) return 0;
-  const hoursLeft = ((earliestDeadline.getTime() - Date.now()) / (1000 * 60 * 60));
+  const hoursLeft = (earliestDeadline.getTime() - Date.now()) / (1000 * 60 * 60);
   const slack = hoursLeft - totalPoints;
-  return slack;
+  // Clamp slack to [-40, 40] (5 days behind/ahead)
+  const clampedSlack = Math.max(-40, Math.min(40, slack));
+  return clampedSlack;
 }
 
 // 4. Weight by Priority (skip completed)
@@ -108,20 +114,27 @@ function getMaxPriorityMultiplier(chain: string[], dag: DagWithDetails): number 
   return Math.max(
     ...chain
       .map(taskId => dag.nodes[taskId])
-      .filter(task => !task.date_of_completion)
-      .map(task => PRIORITY_MULTIPLIER[task.priority ?? "LOW"])
+      .filter(task => task && !task.date_of_completion)
+      .map(task => PRIORITY_MULTIPLIER[task!.priority ?? "LOW"])
   );
 }
 
-// 5. Final Rank for Each Leaf Task
+// 5. Final Urgency for Each Leaf Task (normalized 0-100)
 function calculateUrgencyForTask(taskId: string, dag: DagWithDetails): number {
   const chains = getAllDependencyChains(taskId, dag);
   const rawScores = chains.map(chain => {
-    const slack = calculateBehindScore(chain, dag);
-    const priority = getMaxPriorityMultiplier(chain, dag);
-    return -slack * priority;
+    const slack = calculateBehindScore(chain, dag); // in hours
+    const priority = getMaxPriorityMultiplier(chain, dag); // 1-100
+    // Normalize slack: -40h (5 days behind) → 100 urgency, +40h (5 days ahead) → 0 urgency
+    const normalizedSlack = Math.max(-40, Math.min(40, slack));
+    // Flip slack so lower slack = higher urgency
+    const slackFactor = (40 - normalizedSlack) / 80; // from 0 (low) to 1 (high urgency)
+    // Multiply by priority weight, normalize against max (100)
+    const urgency = slackFactor * (priority / 100) * 100;
+    return urgency;
   });
-  return Math.max(...rawScores);
+  // Return the maximum urgency across all chains this task influences, capped at 100
+  return Math.min(100, Math.max(...rawScores));
 }
 
 // 6. Compute all leaf ranks for a DAG
@@ -400,7 +413,7 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
       setError(null);
 
       const response = await fetch('/api/task', {
-        method: 'DELETE',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ task_id: taskId, action: 'delete' })
       });
@@ -424,14 +437,31 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setError(null);
 
+      // Only include non-null/undefined/non-empty-string fields
+      const payload: any = { action: 'edit' };
+      Object.entries(request).forEach(([key, value]) => {
+        if (
+          value !== undefined &&
+          value !== null &&
+          !(typeof value === 'string' && value.trim() === '')
+        ) {
+          payload[key] = value;
+        }
+      });
+
+      if (!payload.task_id) {
+        throw new Error('task_id is required for update');
+      }
+
       const response = await fetch('/api/task', {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...request, action: 'edit' })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update task');
+        const errorBody = await response.text();
+        throw new Error(`Failed to update task: ${errorBody}`);
       }
 
       await fetchDags();
