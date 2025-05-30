@@ -12,6 +12,7 @@ interface DataContextType {
   refreshWeeks: () => Promise<void>;
   searchWeeks: (query: string) => Promise<void>;
   compareWeeks: (weekIds: string[]) => Promise<void>;
+  refresh_data: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -47,8 +48,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Failed to fetch weeks');
       }
 
-      const data = await response.json();
-      setWeeks(data.weeks || []);
+      const responseData = await response.json();
+      const weeks = responseData.data?.weeks || responseData.weeks || [];
+      setWeeks(weeks);
+      console.log('weeks', weeks);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -77,13 +80,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user?.id, currentTeam?.id]); // Refresh when user or team changes
 
+  // Unified refresh_data function (can be extended to refresh more in the future)
+  const refresh_data = async () => {
+    await refreshWeeks();
+  };
+
   const value = {
     weeks,
     loading,
     error,
     refreshWeeks,
     searchWeeks,
-    compareWeeks
+    compareWeeks,
+    refresh_data,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

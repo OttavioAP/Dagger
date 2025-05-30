@@ -89,13 +89,25 @@ export default function DataView() {
 }
 
 function DataViewContent() {
-  const { weeks, loading, error } = useData();
-  const chartData = getChartData(weeks);
+  const { weeks, loading, error, refresh_data } = useData();
+  const [chartsReady, setChartsReady] = useState(false);
+  const [chartData, setChartData] = useState<any>(null);
+
+  useEffect(() => {
+    // On mount, refresh data, then set chart data
+    (async () => {
+      setChartsReady(false);
+      await refresh_data();
+      setChartData(getChartData(weeks));
+      setChartsReady(true);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">All-Time Analytics</h1>
-      {loading ? (
+      {loading || !chartsReady ? (
         <div className="text-center py-4">Loading...</div>
       ) : error ? (
         <div className="text-red-500 text-center py-4">{error}</div>
