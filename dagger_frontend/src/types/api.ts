@@ -49,9 +49,16 @@ export interface paths {
     /** Get Weeks */
     get: operations["get_weeks_week__get"];
   };
-  "/agentic/search": {
-    /** Agentic Search */
-    get: operations["agentic_search_agentic_search_get"];
+  "/week/test_user_week_create": {
+    /** Test User Week Create */
+    post: operations["test_user_week_create_week_test_user_week_create_post"];
+  };
+  "/agentic/chat": {
+    /**
+     * Chat
+     * @description Chat endpoint that takes a string query and required user_id, calls the LLM with SearchWeeksTool, and returns the response string.
+     */
+    get: operations["chat_agentic_chat_get"];
   };
   "/health": {
     /** Health Check */
@@ -63,6 +70,14 @@ export type webhooks = Record<string, never>;
 
 export interface components {
   schemas: {
+    /** Body_test_user_week_create_week_test_user_week_create_post */
+    Body_test_user_week_create_week_test_user_week_create_post: {
+      /**
+       * User Id
+       * Format: uuid
+       */
+      user_id: string;
+    };
     /** CreateTeamRequest */
     CreateTeamRequest: {
       /** Team Name */
@@ -106,20 +121,6 @@ export interface components {
       /** Detail */
       detail?: components["schemas"]["ValidationError"][];
     };
-    /** SearchResponse */
-    SearchResponse: {
-      /** Reply */
-      reply: string;
-      /** Weeks */
-      weeks: components["schemas"]["week"][];
-      /** Total Count */
-      total_count: number;
-    };
-    /**
-     * SearchType
-     * @enum {string}
-     */
-    SearchType: "regular" | "semantic" | "compare";
     /**
      * TaskFocus
      * @enum {string}
@@ -637,29 +638,44 @@ export interface operations {
       };
     };
   };
-  /** Agentic Search */
-  agentic_search_agentic_search_get: {
-    parameters: {
-      query: {
-        search_type: components["schemas"]["SearchType"];
-        query?: string | null;
-        week_id?: string | null;
-        number_of_weeks?: number;
-        start_date?: string | null;
-        end_date?: string | null;
-        user_id?: string | null;
-        team_id?: string | null;
-        collaborators?: string[] | null;
-        missed_deadlines_range?: [number, number] | null;
-        completed_task_range?: [number, number] | null;
-        points_range?: [number, number] | null;
+  /** Test User Week Create */
+  test_user_week_create_week_test_user_week_create_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Body_test_user_week_create_week_test_user_week_create_post"];
       };
     };
     responses: {
       /** @description Successful Response */
       200: {
         content: {
-          "application/json": components["schemas"]["SearchResponse"];
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /**
+   * Chat
+   * @description Chat endpoint that takes a string query and required user_id, calls the LLM with SearchWeeksTool, and returns the response string.
+   */
+  chat_agentic_chat_get: {
+    parameters: {
+      query: {
+        query: string;
+        user_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
         };
       };
       /** @description Validation Error */

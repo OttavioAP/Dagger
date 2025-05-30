@@ -15,7 +15,6 @@ export type DagAction = components['schemas']['DagAction'];
 export type WeekRequestType = components['schemas']['WeekRequestType'];
 export type UpdateUserOption = components['schemas']['UpdateUserOption'];
 export type Option = components['schemas']['option'];
-export type SearchType = components['schemas']['SearchType'];
 
 // Request/Response types
 export type UpdateUserRequest = components['schemas']['UpdateUserRequest'];
@@ -24,5 +23,4 @@ export type TaskRequest = components['schemas']['TaskRequest'];
 export type DagRequest = components['schemas']['DagRequest'];
 export type UserTasksRequest = components['schemas']['UserTasksRequest'];
 export type WeekResponse = components['schemas']['WeekResponse'];
-export type DagResponse = components['schemas']['DagResponse'];
-export type SearchResponse = components['schemas']['SearchResponse']; 
+export type DagResponse = components['schemas']['DagResponse']; 

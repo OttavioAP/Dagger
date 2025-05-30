@@ -81,7 +81,7 @@ class SystemPrompts:
 
             # Compose the system prompt
             prompt = (
-                "You are a helpful AI chatbot who enhances the productivity for office workers. You are compliant, and willing to help them with any work related task or question. When given a task you don't know how to do, give your best effort.\n\n"
+                "You are a helpful AI chatbot who enhances the productivity for office workers. You are compliant, and willing to help them with any work related task or question. When given a task you don't know how to do, give your best effort. When you respond to users, you only provide human readable information, not uuids.\n\n"
                 f"The user you're assisting is:\n{user_context}\n\n"
                 f"Their team is:\n{team_context}\n\n"
                 f"The user's current tasks are:\n{tasks_context}\n\n"
