@@ -42,6 +42,9 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
   const [points, setPoints] = useState<number>(task?.points || 0);
   const [notes, setNotes] = useState(task?.notes || '');
 
+  // Expand/collapse state for description and notes
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [notesExpanded, setNotesExpanded] = useState(false);
 
   // Dependency and user assignment state
   const [newDependencies, setNewDependencies] = useState<string[]>([]); // task ids
@@ -56,7 +59,11 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
   const [usersToAdd, setUsersToAdd] = useState<string[]>([]);
 
   // UI state for dependency/user fields
-  const [depInputs, setDepInputs] = useState<(Task | null)[]>(mode === 'edit' ? initialDependencies.map(id => tasksDict[id] || null) : [null]);
+  const [depInputs, setDepInputs] = useState<{ value: string; task: Task | null }[]>(
+    mode === 'edit'
+      ? initialDependencies.map(id => ({ value: tasksDict[id]?.task_name || '', task: tasksDict[id] || null }))
+      : [{ value: '', task: null }]
+  );
   const [userInputs, setUserInputs] = useState<string[]>(mode === 'edit' ? initialUsers.map(uid => teamUsers.find(u => u.id === uid)?.username || '' ) : ['']);
 
   // Helper: get all tasks except this one
@@ -90,11 +97,11 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
   const handleRemoveDependency = (idx: number) => {
     if (mode === 'create') {
       // Remove from newDependencies
-      const depId = depInputs[idx]?.id;
+      const depId = depInputs[idx]?.task?.id;
       if (depId) setNewDependencies(prev => prev.filter(id => id !== depId));
       setDepInputs(inputs => inputs.filter((_, i) => i !== idx));
     } else if (mode === 'edit') {
-      const depId = depInputs[idx]?.id;
+      const depId = depInputs[idx]?.task?.id;
       if (depId) {
         if (initialDependencies.includes(depId)) {
           setDependenciesToRemove(prev => [...new Set([...prev, depId])]);
@@ -128,18 +135,20 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
   };
 
   // Add dependency field
-  const addDepField = () => setDepInputs([...depInputs, null]);
+  const addDepField = () => setDepInputs([...depInputs, { value: '', task: null }]);
   // Add user field
   const addUserField = () => setUserInputs([...userInputs, '']);
 
   // Handle dependency input change
   const handleDepInputChange = (idx: number, value: string) => {
-    const foundTask = availableTasks.find(t => t.task_name === value);
+    // Always update the input value
     setDepInputs(inputs => {
       const newInputs = [...inputs];
-      newInputs[idx] = foundTask || null;
+      const foundTask = availableTasks.find(t => t.task_name === value);
+      newInputs[idx] = { value, task: foundTask || null };
       return newInputs;
     });
+    const foundTask = availableTasks.find(t => t.task_name === value);
     if (foundTask && foundTask.id) {
       if (mode === 'create') {
         setNewDependencies(prev => [...new Set([...prev, foundTask.id!])]);
@@ -322,8 +331,26 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
             <input id="task-name" className="w-full p-2 rounded bg-[#23232a] text-white" placeholder="Task Name" value={taskName} onChange={e => setTaskName(e.target.value)} />
           </div>
           <div>
-            <label className="block mb-1 font-semibold" htmlFor="description">Description</label>
-            <textarea id="description" className="w-full p-2 rounded bg-[#23232a] text-white" placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
+            <div className="flex items-center mb-1">
+              <label className="font-semibold mr-2" htmlFor="description">Description</label>
+              <button
+                type="button"
+                className="text-xs text-blue-400 underline border border-blue-400 rounded px-2 py-0.5 ml-auto focus:outline-none focus:ring-2 focus:ring-blue-400"
+                style={{ minWidth: 70 }}
+                onClick={() => setDescExpanded(e => !e)}
+              >
+                {descExpanded ? 'Collapse' : 'Expand'}
+              </button>
+            </div>
+            <textarea
+              id="description"
+              className="w-full p-2 rounded bg-[#23232a] text-white transition-all"
+              placeholder="Description"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              rows={descExpanded ? 8 : 2}
+              style={descExpanded ? { minHeight: 120 } : { minHeight: 40 }}
+            />
           </div>
           <div>
             <label className="block mb-1 font-semibold" htmlFor="deadline">Deadline</label>
@@ -346,11 +373,30 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
             <div className="w-20">
               <label className="block mb-1 font-semibold" htmlFor="points">Points</label>
               <input id="points" className="w-full p-2 rounded bg-[#23232a] text-white" type="number" min={0} value={points} onChange={e => setPoints(Number(e.target.value))} placeholder="Points" />
+              <div className="text-xs text-gray-400 italic mt-1">8 points = 1 day of work</div>
             </div>
           </div>
           <div>
-            <label className="block mb-1 font-semibold" htmlFor="notes">Notes</label>
-            <textarea id="notes" className="w-full p-2 rounded bg-[#23232a] text-white" placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} />
+            <div className="flex items-center mb-1">
+              <label className="font-semibold mr-2" htmlFor="notes">Notes</label>
+              <button
+                type="button"
+                className="text-xs text-blue-400 underline border border-blue-400 rounded px-2 py-0.5 ml-auto focus:outline-none focus:ring-2 focus:ring-blue-400"
+                style={{ minWidth: 70 }}
+                onClick={() => setNotesExpanded(e => !e)}
+              >
+                {notesExpanded ? 'Collapse' : 'Expand'}
+              </button>
+            </div>
+            <textarea
+              id="notes"
+              className="w-full p-2 rounded bg-[#23232a] text-white transition-all"
+              placeholder="Notes"
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              rows={notesExpanded ? 8 : 2}
+              style={notesExpanded ? { minHeight: 120 } : { minHeight: 40 }}
+            />
           </div>
           {/* Dependencies */}
           <div>
@@ -360,14 +406,14 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
                 <input
                   className="flex-1 p-2 rounded bg-[#23232a] text-white"
                   placeholder="Search task..."
-                  value={input ? input.task_name : ''}
+                  value={input.value}
                   onChange={e => handleDepInputChange(idx, e.target.value)}
                   list={`dep-tasks-${idx}`}
                 />
                 <datalist id={`dep-tasks-${idx}`}> 
                   {availableTasks
                     .filter(t => {
-                      const val = input ? input.task_name : '';
+                      const val = input.value;
                       return t.task_name.toLowerCase().includes(val.toLowerCase());
                     })
                     .map(t => (
@@ -375,7 +421,7 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
                     ))}
                 </datalist>
                 {/* Only show remove button if this field has a value */}
-                {input && (
+                {(input.value || input.task) && (
                   <button type="button" onClick={() => handleRemoveDependency(idx)} className="text-red-400">Remove</button>
                 )}
               </div>

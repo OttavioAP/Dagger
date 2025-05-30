@@ -42,9 +42,97 @@ interface DagContextType {
   get_task_dependencies: (taskId: string) => Task[];
   get_task_users: (taskId: string) => string[];
   get_dag_id_by_task_id: (taskId: string) => string | undefined;
+  computeAllLeafUrgencies: (dag: DagWithDetails) => Record<string, number>;
 }
 
 const DagContext = createContext<DagContextType | undefined>(undefined);
+
+const HOURS_PER_DAY = 8;
+const PRIORITY_MULTIPLIER: Record<TaskPriority, number> = {
+  LOW: 1,
+  MEDIUM: 2,
+  HIGH: 3,
+  EMERGENCY: 100,
+};
+
+// 1. Identify Leaf Tasks (no dependencies, not completed)
+function getLeafTasks(dag: DagWithDetails): string[] {
+  return Object.keys(dag.nodes).filter(
+    id =>
+      (!dag.dag_graph[id] || dag.dag_graph[id].length === 0) &&
+      !dag.nodes[id].date_of_completion
+  );
+}
+
+// 2. Walk Dependency Chains (DFS from leaf, skip completed, follow downstream dependencies)
+function getAllDependencyChains(taskId: string, dag: DagWithDetails): string[][] {
+  const chains: string[][] = [];
+  function dfs(current: string, path: string[]) {
+    // Follow downstream dependencies (tasks this task depends on)
+    const deps = (dag.dag_graph[current] || []).filter(
+      depId => !dag.nodes[depId]?.date_of_completion
+    );
+    if (deps.length === 0) {
+      chains.push([...path, current]);
+    } else {
+      for (const dep of deps) {
+        dfs(dep, [...path, current]);
+      }
+    }
+  }
+  dfs(taskId, []);
+  return chains;
+}
+
+// 3. Calculate "Behind Score" for a Chain (skip completed)
+function calculateBehindScore(chain: string[], dag: DagWithDetails): number {
+  let totalPoints = 0;
+  let earliestDeadline: Date | null = null;
+  for (const taskId of chain) {
+    const task = dag.nodes[taskId];
+    if (task.date_of_completion) continue;
+    totalPoints += task.points || 0;
+    const deadline = task.deadline ? new Date(task.deadline) : null;
+    if (deadline && (!earliestDeadline || deadline < earliestDeadline)) {
+      earliestDeadline = deadline;
+    }
+  }
+  if (!earliestDeadline) return 0;
+  const hoursLeft = ((earliestDeadline.getTime() - Date.now()) / (1000 * 60 * 60));
+  const slack = hoursLeft - totalPoints;
+  return slack;
+}
+
+// 4. Weight by Priority (skip completed)
+function getMaxPriorityMultiplier(chain: string[], dag: DagWithDetails): number {
+  return Math.max(
+    ...chain
+      .map(taskId => dag.nodes[taskId])
+      .filter(task => !task.date_of_completion)
+      .map(task => PRIORITY_MULTIPLIER[task.priority ?? "LOW"])
+  );
+}
+
+// 5. Final Rank for Each Leaf Task
+function calculateUrgencyForTask(taskId: string, dag: DagWithDetails): number {
+  const chains = getAllDependencyChains(taskId, dag);
+  const rawScores = chains.map(chain => {
+    const slack = calculateBehindScore(chain, dag);
+    const priority = getMaxPriorityMultiplier(chain, dag);
+    return -slack * priority;
+  });
+  return Math.max(...rawScores);
+}
+
+// 6. Compute all leaf ranks for a DAG
+function computeAllLeafUrgencies(dag: DagWithDetails): Record<string, number> {
+  const leafTasks = getLeafTasks(dag);
+  const ranks: Record<string, number> = {};
+  for (const taskId of leafTasks) {
+    ranks[taskId] = calculateUrgencyForTask(taskId, dag);
+  }
+  return ranks;
+}
 
 export function DagProvider({ children }: { children: React.ReactNode }) {
   const [dags, setDags] = useState<DagWithDetails[]>([]);
@@ -438,6 +526,7 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
     get_task_dependencies,
     get_task_users,
     get_dag_id_by_task_id,
+    computeAllLeafUrgencies,
   };
 
   return <DagContext.Provider value={value}>{children}</DagContext.Provider>;

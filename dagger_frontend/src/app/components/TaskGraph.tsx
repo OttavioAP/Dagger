@@ -40,13 +40,64 @@ const dagColors = [
 
 const getDagColor = (dagIndex: number) => dagColors[dagIndex % dagColors.length];
 
-function getLayoutedElements(nodes: Node[], edges: Edge[]) {
+// Arrow color palette (soft, visually distinct)
+const arrowColors = [
+  '#60a5fa', // blue
+  '#f59e42', // orange
+  '#10b981', // green
+  '#f43f5e', // red
+  '#a78bfa', // purple
+  '#fbbf24', // yellow
+  '#6366f1', // indigo
+  '#14b8a6', // teal
+  '#e879f9', // pink
+  '#f472b6', // rose
+  '#38bdf8', // sky
+  '#facc15', // gold
+  '#4ade80', // mint
+  '#f87171', // coral
+  '#a3e635', // lime
+  '#fcd34d', // amber
+];
+
+// Helper: Compute level (number of dependencies from leaf) for each node
+function computeTaskLevels(dag: DagWithDetails): Record<string, number> {
+  const levels: Record<string, number> = {};
+  const getLevel = (id: string): number => {
+    if (levels[id] !== undefined) return levels[id];
+    const deps = dag.dag_graph[id] || [];
+    if (deps.length === 0) {
+      levels[id] = 0;
+    } else {
+      levels[id] = Math.max(...deps.map(getLevel)) + 1;
+    }
+    return levels[id];
+  };
+  Object.keys(dag.nodes).forEach(getLevel);
+  return levels;
+}
+
+function getLayoutedElements(nodes: Node[], edges: Edge[], dag?: DagWithDetails) {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ rankdir: 'LR' });
+  dagreGraph.setGraph({
+    rankdir: 'LR',
+    nodesep: 180,
+    ranksep: 320,
+  });
+
+  // If a DAG is provided, compute levels and assign as rank
+  let levels: Record<string, number> = {};
+  if (dag) {
+    levels = computeTaskLevels(dag);
+  }
 
   nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+    dagreGraph.setNode(node.id, {
+      width: nodeWidth,
+      height: nodeHeight,
+      ...(levels[node.id] !== undefined ? { rank: levels[node.id] } : {}),
+    });
   });
   edges.forEach((edge) => {
     dagreGraph.setEdge(edge.source, edge.target);
@@ -156,16 +207,18 @@ const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick, onC
   // Build edges: all DAG edges (from filtered DAGs)
   const edges: Edge[] = useMemo(() => {
     const result: Edge[] = [];
+    let colorIdx = 0;
     visibleDags.forEach((dag, dagIndex) => {
-      const color = getDagColor(dagIndex);
       Object.entries(dag.dag_graph).forEach(([from, tos]) => {
         (tos as string[]).forEach((to: string) => {
+          const color = arrowColors[colorIdx % arrowColors.length];
+          colorIdx++;
           result.push({
             id: `${from}->${to}`,
             source: to,
             target: from,
             animated: true,
-            style: { stroke: color, strokeWidth: 2 },
+            style: { stroke: color, strokeWidth: 6 }, // 3x thicker (was 2)
             markerEnd: {
               type: MarkerType.ArrowClosed,
               color: color,
@@ -178,7 +231,7 @@ const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick, onC
   }, [visibleDags]);
 
   // Layout
-  const layoutedNodes = useMemo(() => getLayoutedElements(nodes, edges), [nodes, edges]);
+  const layoutedNodes = useMemo(() => getLayoutedElements(nodes, edges, visibleDags[0]), [nodes, edges, visibleDags]);
 
   return (
     <div className="relative w-screen" style={{ height: 'calc(100vh - 4rem)', background: '#18181b', borderRadius: '1rem' }}>
