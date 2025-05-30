@@ -17,6 +17,7 @@ interface TaskNodeData {
   label: string;
   priority: TaskPriority;
   assigned_users: string[]; // user IDs
+  date_of_completion?: string;
 }
 
 const TaskNode: React.FC<NodeProps<TaskNodeData>> = ({ data }) => {
@@ -24,9 +25,16 @@ const TaskNode: React.FC<NodeProps<TaskNodeData>> = ({ data }) => {
   const collaborators = data.assigned_users
     .map((uid: string) => teamUsers.find(u => u.id === uid)?.username)
     .filter((name: string | undefined): name is string => Boolean(name));
+  const isCompleted = !!data.date_of_completion;
 
   return (
-    <div className={`rounded-lg shadow-lg px-4 py-3 min-w-[180px] max-w-[240px] border-2 ${priorityColor[data.priority] || 'bg-gray-700'} border-gray-700 text-white`}>
+    <div
+      className={`rounded-lg p-4 shadow-md border-2
+        ${isCompleted
+          ? 'bg-gray-700 border-gray-500 text-gray-300'
+          : `${priorityColor[data.priority]} border-[#35373B] text-white`}
+      `}
+    >
       <div className="font-bold text-lg truncate mb-2">{data.label}</div>
       <div className="text-xs text-gray-200 mb-1">Collaborators:</div>
       <div className="flex flex-wrap gap-1">

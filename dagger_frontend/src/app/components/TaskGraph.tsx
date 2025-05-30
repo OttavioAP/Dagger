@@ -1,6 +1,6 @@
 // NOTE: You must install reactflow and dagre: npm install reactflow dagre
 // For types: npm install --save-dev @types/dagre
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import ReactFlow, { Background, Controls, Edge, Node, Position, MarkerType } from 'reactflow';
 import 'reactflow/dist/style.css';
 import dagre from 'dagre';
@@ -9,6 +9,8 @@ import type { DagWithDetails } from '../contexts/dag_context';
 import type { Task, TaskPriority } from '@/client/types.gen';
 import { useDag } from '../contexts/dag_context';
 import { useTeam } from '../contexts/team_context';
+import { format, subWeeks } from 'date-fns';
+import { useAuth } from '../contexts/auth_context';
 
 const nodeWidth = 220;
 const nodeHeight = 100;
@@ -64,46 +66,79 @@ function getLayoutedElements(nodes: Node[], edges: Edge[]) {
 }
 
 const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick, onCreateClick }) => {
-  const { currentTeam } = useTeam();
+  const { currentTeam, teamUsers } = useTeam();
+  const { get_task_users } = useDag();
+  const { user } = useAuth();
 
-  // Collect all task IDs that are part of any DAG (for this team only)
-  const dagTaskIds = useMemo(() => {
+  // Filter modal state
+  const [showFilter, setShowFilter] = useState(false);
+  const [filterDate, setFilterDate] = useState(format(subWeeks(new Date(), 2), 'yyyy-MM-dd'));
+  const [filterMine, setFilterMine] = useState(false);
+  const [filterUrgency, setFilterUrgency] = useState<'ALL' | TaskPriority>('ALL');
+
+  // Open/close filter modal
+  const openFilter = () => setShowFilter(true);
+  const closeFilter = () => setShowFilter(false);
+
+  // Filtering logic
+  const filteredTasksDict = useMemo(() => {
+    const result: { [key: string]: Task } = {};
+    Object.values(tasksDict).forEach(task => {
+      // Filter by mine using get_task_users from dag_context
+      if (filterMine && (!user || !get_task_users(task.id || '').includes(user.id))) return;
+      // Filter by urgency
+      if (filterUrgency !== 'ALL' && task.priority !== filterUrgency) return;
+      // Filter by date
+      const filterDateObj = new Date(filterDate);
+      const deadline = task.deadline ? new Date(task.deadline) : null;
+      if (
+        deadline && deadline < filterDateObj && task.date_of_completion
+      ) {
+        // Deadline is before filter date and task is completed, skip
+        return;
+      }
+      result[task.id!] = task;
+    });
+    return result;
+  }, [tasksDict, filterMine, filterUrgency, filterDate, user, get_task_users]);
+
+  // 1. Only show DAGs with at least one incomplete task (and belong to current team)
+  const visibleDags = useMemo(() =>
+    dags.filter(dag => dag.team_id === currentTeam?.id && Object.values(dag.nodes).some(task => filteredTasksDict[task.id!] && !task.date_of_completion)),
+    [dags, currentTeam, filteredTasksDict]
+  );
+
+  // 2. Collect all task IDs that are in visible DAGs
+  const visibleDagTaskIds = useMemo(() => {
     const ids = new Set<string>();
-    dags.forEach(dag => {
-      if (!currentTeam || dag.team_id !== currentTeam.id) return;
+    visibleDags.forEach(dag => {
       Object.keys(dag.nodes).forEach(id => ids.add(id));
     });
     return ids;
-  }, [dags, currentTeam]);
+  }, [visibleDags]);
 
-  // Filter DAGs to only those with at least one non-completed task and that belong to the current team
-  const filteredDags = useMemo(() =>
-    dags.filter(dag => dag.team_id === currentTeam?.id && Object.values(dag.nodes).some(task => !task.date_of_completion)),
-    [dags, currentTeam]
-  );
-
-  // Build nodes: all DAG nodes (from filtered DAGs) + orphan tasks (not in any DAG and not completed, and belong to current team)
+  // Build nodes: all DAG nodes (from visible DAGs) + orphan tasks (not in any visible DAG and not completed, and belong to current team)
   const nodes: Node[] = useMemo(() => {
     const dagNodes: Node[] = [];
-    filteredDags.forEach(dag => {
+    visibleDags.forEach(dag => {
       Object.values(dag.nodes).forEach(task => {
-        if (!task.date_of_completion) {
-          dagNodes.push({
-            id: task.id!,
-            type: 'task',
-            data: {
-              label: task.task_name,
-              priority: task.priority as TaskPriority,
-              assigned_users: task.assigned_users,
-            },
-            position: { x: 0, y: 0 },
-          });
-        }
+        if (!filteredTasksDict[task.id!]) return;
+        dagNodes.push({
+          id: task.id!,
+          type: 'task',
+          data: {
+            label: task.task_name,
+            priority: task.priority as TaskPriority,
+            assigned_users: get_task_users(task.id!),
+            date_of_completion: task.date_of_completion,
+          },
+          position: { x: 0, y: 0 },
+        });
       });
     });
-    // Orphan tasks (not in any DAG and not completed, and belong to current team)
-    const orphanNodes: Node[] = Object.values(tasksDict)
-      .filter(task => task.id && !dagTaskIds.has(task.id) && !task.date_of_completion && task.team_id === currentTeam?.id)
+    // Orphan tasks: not in any visible DAG, and in filteredTasksDict, and belong to current team
+    const orphanNodes: Node[] = Object.values(filteredTasksDict)
+      .filter(task => task.id && !visibleDagTaskIds.has(task.id) && task.team_id === currentTeam?.id)
       .map(task => ({
         id: task.id!,
         type: 'task',
@@ -111,16 +146,17 @@ const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick, onC
           label: task.task_name,
           priority: task.priority as TaskPriority,
           assigned_users: [],
+          date_of_completion: task.date_of_completion,
         },
         position: { x: 0, y: 0 },
       }));
     return [...dagNodes, ...orphanNodes];
-  }, [filteredDags, tasksDict, dagTaskIds, currentTeam]);
+  }, [visibleDags, filteredTasksDict, visibleDagTaskIds, currentTeam]);
 
   // Build edges: all DAG edges (from filtered DAGs)
   const edges: Edge[] = useMemo(() => {
     const result: Edge[] = [];
-    filteredDags.forEach((dag, dagIndex) => {
+    visibleDags.forEach((dag, dagIndex) => {
       const color = getDagColor(dagIndex);
       Object.entries(dag.dag_graph).forEach(([from, tos]) => {
         (tos as string[]).forEach((to: string) => {
@@ -139,7 +175,7 @@ const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick, onC
       });
     });
     return result;
-  }, [filteredDags]);
+  }, [visibleDags]);
 
   // Layout
   const layoutedNodes = useMemo(() => getLayoutedElements(nodes, edges), [nodes, edges]);
@@ -161,15 +197,58 @@ const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick, onC
           <Controls />
         </ReactFlow>
       </div>
-      {/* Centered Create Task button at the bottom */}
-      <div className="absolute left-1/2 transform -translate-x-1/2 z-10" style={{ bottom: '2rem' }}>
+      {/* Centered Create Task button at the bottom, and Filter button next to it */}
+      <div className="absolute left-1/2 transform -translate-x-1/2 z-10 flex gap-4" style={{ bottom: '2rem' }}>
         <button
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded font-semibold shadow-lg"
           onClick={onCreateClick}
         >
           + Create Task
         </button>
+        <button
+          className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded font-semibold shadow-lg"
+          onClick={openFilter}
+        >
+          Filter
+        </button>
       </div>
+      {/* Filter Modal */}
+      {showFilter && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="bg-[#232324] p-8 rounded-lg shadow-xl w-full max-w-md relative">
+            <button className="absolute top-2 right-2 text-gray-400 hover:text-white" onClick={closeFilter}>&times;</button>
+            <h2 className="text-xl font-bold mb-4">Filter Tasks</h2>
+            <div className="mb-4">
+              <label className="block mb-1 font-semibold">Show tasks assigned to me only</label>
+              <input type="checkbox" checked={filterMine} onChange={e => setFilterMine(e.target.checked)} />
+            </div>
+            <div className="mb-4">
+              <label className="block mb-1 font-semibold">Urgency</label>
+              <select value={filterUrgency} onChange={e => setFilterUrgency(e.target.value as any)} className="w-full p-2 rounded bg-[#18181b] text-white">
+                <option value="ALL">All</option>
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+                <option value="EMERGENCY">Emergency</option>
+              </select>
+            </div>
+            <div className="mb-4">
+              <label className="block mb-1 font-semibold">Show tasks active after</label>
+              <input
+                type="date"
+                value={filterDate}
+                max={format(new Date(), 'yyyy-MM-dd')}
+                onChange={e => setFilterDate(e.target.value)}
+                className="w-full p-2 rounded bg-[#18181b] text-white"
+              />
+              <div className="text-xs text-gray-400 mt-1">(Only dates in the past allowed)</div>
+            </div>
+            <div className="flex justify-end">
+              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded" onClick={closeFilter}>Apply</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

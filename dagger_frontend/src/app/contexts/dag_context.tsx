@@ -38,6 +38,7 @@ interface DagContextType {
   tasksDict: { [key: string]: Task };
   deleteTask: (taskId: string) => Promise<void>;
   updateTask: (request: TaskRequest) => Promise<void>;
+  completeTask: (taskId: string) => Promise<void>;
   get_task_dependencies: (taskId: string) => Task[];
   get_task_users: (taskId: string) => string[];
   get_dag_id_by_task_id: (taskId: string) => string | undefined;
@@ -354,6 +355,29 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Mark a task as completed
+  const completeTask = async (taskId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const now = new Date().toISOString();
+      const response = await fetch('/api/task', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task_id: taskId, date_of_completion: now, action: 'edit' })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to complete task');
+      }
+      await fetchDags();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Helper: Get dependencies of a task (returns Task[])
   const get_task_dependencies = (taskId: string): Task[] => {
     // Find the DAG that contains this task
@@ -409,6 +433,7 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
     tasksDict,
     deleteTask,
     updateTask,
+    completeTask,
     get_task_dependencies,
     get_task_users,
     get_dag_id_by_task_id,

@@ -30,6 +30,7 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
     get_task_dependencies,
     get_task_users,
     get_dag_id_by_task_id,
+    completeTask,
   } = useDag();
   const { teamUsers } = useTeam();
   const { user } = useAuth();
@@ -301,6 +302,14 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
     }
   };
 
+  // Complete task handler
+  const handleComplete = async () => {
+    if (task?.id) {
+      await completeTask(task.id);
+      onClose();
+    }
+  };
+
   // Modal UI
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
@@ -402,16 +411,31 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
             <button type="button" onClick={addUserField} className="text-blue-400">+ Add User</button>
           </div>
         </div>
-        <div className="flex justify-between mt-8">
+        <div className="flex flex-col gap-4 mt-8">
           {mode === 'edit' && (
-            <button onClick={handleDelete} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Delete</button>
+            <>
+              <div className="flex justify-between">
+                <button onClick={handleDelete} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Delete</button>
+                <div className="flex gap-2 ml-auto">
+                  <button onClick={onClose} className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded">Cancel</button>
+                  <button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Save</button>
+                </div>
+              </div>
+              <button
+                onClick={handleComplete}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded w-full font-semibold"
+                disabled={!!task?.date_of_completion}
+              >
+                {task?.date_of_completion ? 'Task Completed' : 'Mark as Complete'}
+              </button>
+            </>
           )}
-          <div className="flex gap-2 ml-auto">
-            <button onClick={onClose} className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded">Cancel</button>
-            <button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-              {mode === 'create' ? 'Create' : 'Save'}
-            </button>
-          </div>
+          {mode === 'create' && (
+            <div className="flex gap-2 ml-auto justify-end">
+              <button onClick={onClose} className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded">Cancel</button>
+              <button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Create</button>
+            </div>
+          )}
         </div>
       </div>
     </div>
