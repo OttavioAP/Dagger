@@ -8,8 +8,8 @@ export default function NavBar() {
   const { user, logout } = useAuth();
 
   return (
-    <nav className="w-full bg-gray-900 text-white shadow-md">
-      <div className="container mx-auto flex items-center justify-between px-4 py-3">
+    <nav className="w-full bg-gray-900 text-white shadow-md fixed top-0 left-0 z-50">
+      <div className="container mx-auto flex items-center justify-between px-4 h-16">
         <Link href="/" className="flex items-center gap-3">
           <Image
             src="/Dagger_Logo.png"
