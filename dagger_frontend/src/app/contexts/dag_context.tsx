@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import type { 
   DagRequest, 
   TaskRequest, 
@@ -138,13 +138,27 @@ function calculateUrgencyForTask(taskId: string, dag: DagWithDetails): number {
 }
 
 // 6. Compute all leaf ranks for a DAG
-function computeAllLeafUrgencies(dag: DagWithDetails): Record<string, number> {
-  const leafTasks = getLeafTasks(dag);
+export function computeAllLeafUrgencies(dag: DagWithDetails): Record<string, number> {
+  // A task is a leaf if it has no UNCOMPLETED dependencies
+  const leaves = Object.keys(dag.nodes).filter(taskId => {
+    const deps = dag.dag_graph[taskId] || [];
+    if (deps.length === 0) return true;
+    return deps.every(depId => {
+      const depTask = dag.nodes[depId];
+      return depTask && depTask.date_of_completion;
+    });
+  });
   const ranks: Record<string, number> = {};
-  for (const taskId of leafTasks) {
+  for (const taskId of leaves) {
     ranks[taskId] = calculateUrgencyForTask(taskId, dag);
   }
   return ranks;
+}
+
+// Custom hook to always recompute leaf urgencies when dags/tasks change
+export function useLeafUrgencies(dag: DagWithDetails) {
+  // Recompute every time dag changes (including nodes, dag_graph)
+  return useMemo(() => computeAllLeafUrgencies(dag), [dag, dag.nodes, dag.dag_graph]);
 }
 
 export function DagProvider({ children }: { children: React.ReactNode }) {

@@ -11,6 +11,7 @@ import { useDag } from '../contexts/dag_context';
 import { useTeam } from '../contexts/team_context';
 import { format, subWeeks } from 'date-fns';
 import { useAuth } from '../contexts/auth_context';
+import { computeAllLeafUrgencies } from '../contexts/dag_context';
 
 const nodeWidth = 220;
 const nodeHeight = 100;
@@ -168,10 +169,20 @@ const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick, onC
     return ids;
   }, [visibleDags]);
 
+  // For each visible DAG, recompute leaf urgencies
+  const dagLeafUrgencies = useMemo(() => {
+    const result: Record<string, Record<string, number>> = {};
+    visibleDags.forEach(dag => {
+      result[dag.dag_id || ''] = computeAllLeafUrgencies(dag);
+    });
+    return result;
+  }, [visibleDags]);
+
   // Build nodes: all DAG nodes (from visible DAGs) + orphan tasks (not in any visible DAG and not completed, and belong to current team)
   const nodes: Node[] = useMemo(() => {
     const dagNodes: Node[] = [];
     visibleDags.forEach(dag => {
+      const leafUrgencies = dagLeafUrgencies[dag.dag_id || ''] || {};
       Object.values(dag.nodes).forEach(task => {
         if (!filteredTasksDict[task.id!]) return;
         dagNodes.push({
@@ -182,6 +193,7 @@ const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick, onC
             priority: task.priority as TaskPriority,
             assigned_users: get_task_users(task.id!),
             date_of_completion: task.date_of_completion,
+            leafUrgency: leafUrgencies[task.id!],
           },
           position: { x: 0, y: 0 },
         });
@@ -198,11 +210,12 @@ const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick, onC
           priority: task.priority as TaskPriority,
           assigned_users: [],
           date_of_completion: task.date_of_completion,
+          leafUrgency: undefined,
         },
         position: { x: 0, y: 0 },
       }));
     return [...dagNodes, ...orphanNodes];
-  }, [visibleDags, filteredTasksDict, visibleDagTaskIds, currentTeam]);
+  }, [visibleDags, filteredTasksDict, visibleDagTaskIds, currentTeam, get_task_users, dagLeafUrgencies]);
 
   // Build edges: all DAG edges (from filtered DAGs)
   const edges: Edge[] = useMemo(() => {

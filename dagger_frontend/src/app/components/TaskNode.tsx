@@ -59,7 +59,24 @@ const TaskNode: React.FC<NodeProps<TaskNodeData>> = ({ data, id }) => {
   // Find the DAG this task belongs to
   const dag = React.useMemo(() => dags.find(d => d.nodes[id]), [dags, id]);
   // Compute leaf urgencies for this DAG
-  const leafUrgencies = React.useMemo(() => dag ? computeAllLeafUrgencies(dag) : {}, [dag, computeAllLeafUrgencies]);
+  const leafUrgencies = React.useMemo(() => {
+    if (!dag) return {};
+    // Only consider as leaf if no UNCOMPLETED dependencies
+    const leaves: string[] = Object.keys(dag.nodes).filter(taskId => {
+      const deps = dag.dag_graph[taskId] || [];
+      if (deps.length === 0) return true;
+      return deps.every(depId => {
+        const depTask = dag.nodes[depId];
+        return depTask && depTask.date_of_completion;
+      });
+    });
+    // Compute urgencies for leaves
+    const urgencies: Record<string, number> = {};
+    for (const leafId of leaves) {
+      urgencies[leafId] = computeAllLeafUrgencies(dag)[leafId];
+    }
+    return urgencies;
+  }, [dag, computeAllLeafUrgencies]);
   // If this task is a leaf, show its urgency
   const urgency = leafUrgencies[id];
   const isLeaf = urgency !== undefined;

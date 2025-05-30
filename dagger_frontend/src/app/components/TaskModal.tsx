@@ -208,14 +208,15 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
     // Find the DAG this task belongs to
     const dag = dags.find(d => d.nodes[task.id as string]);
     if (!dag) return false;
-    // A task is a leaf if no unfinished tasks depend on it (i.e., no unfinished task lists this task as a dependency)
-    return !Object.entries(dag.nodes).some(
-      ([otherId, t]) =>
-        otherId !== task.id &&
-        !t.date_of_completion &&
-        Array.isArray(dag.dag_graph[otherId]) &&
-        (dag.dag_graph[otherId] as string[]).includes(task.id as string)
-    );
+    // A task is a leaf if it has no UNCOMPLETED dependencies
+    const deps = dag.dag_graph[task.id] || [];
+    // If there are no dependencies, it's a leaf
+    if (deps.length === 0) return true;
+    // If all dependencies are completed, it's a leaf
+    return deps.every(depId => {
+      const depTask = dag.nodes[depId];
+      return depTask && depTask.date_of_completion;
+    });
   }, [task, dags]);
 
   // Modal logic
