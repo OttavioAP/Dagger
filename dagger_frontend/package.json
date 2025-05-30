@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "openapi-typescript http://localhost:8080/openapi.json -o src/types/api.ts && openapi-ts -i http://localhost:8080/openapi.json -o src/client -c @hey-api/client-fetch && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "generate-types": "openapi-typescript http://localhost:8080/openapi.json -o src/types/api.ts"

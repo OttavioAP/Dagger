@@ -5,9 +5,11 @@ services:
     container_name: my_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB_NAME:-postgres}
-      POSTGRES_USER: ${POSTGRES_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD:-postgres}
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB_PORT: 5432
+      POSTGRES_DB_HOST: localhost
     ports:
       - "5432:5432"
     volumes:
@@ -31,11 +33,22 @@ services:
     build:
       context: ./backend
       dockerfile: DockerFile
+    env_file:
+      - .env
     container_name: dagger_backend
     depends_on:
       - db
     environment:
-      DATABASE_URL: postgres://postgres:postgres@db:5432/postgres
+      POSTGRES_DB_NAME: postgres
+      POSTGRES_DB_USER: postgres
+      POSTGRES_DB_PASSWORD: postgres
+      POSTGRES_DB_HOST: db
+      POSTGRES_DB_PORT: 5432
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LLM_API_BASE_URL: ${LLM_API_BASE_URL-https://openrouter.ai/api/v1}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME-google/gemini-2.0-flash-001}
+      LLM_API_KEY: ${LLM_API_KEY}
+      
     ports:
       - "8080:8080"
     restart: unless-stopped
@@ -43,7 +56,7 @@ services:
   frontend:
     build:
       context: ./dagger_frontend
-      dockerfile: Dockerfile
+      dockerfile: DockerFile
     container_name: dagger_frontend
     depends_on:
       - backend
