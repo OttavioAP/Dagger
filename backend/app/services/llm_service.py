@@ -5,6 +5,7 @@ from openai.types.chat.chat_completion import ChatCompletion
 from tenacity import retry, stop_after_attempt, wait_exponential
 import torch
 from transformers import AutoTokenizer, AutoModel
+import asyncio
 
 from app.config.config import app_settings
 from app.schema.llm.message import Message, ToolMessage
@@ -12,6 +13,7 @@ from app.core.exceptions import LLMException
 from app.core.logger import logger
 from typing import Dict, Any, Optional
 from app.schema.llm.tool import AbstractTool, ToolCall
+from app.services.database_service import get_db
 
 
 def collect_tools() -> Dict[str, Dict[str, Any]]:
@@ -117,6 +119,9 @@ class LLMService:
         if isinstance(tools, str):
             tools = [tools]
 
+        logger.debug(f"tools passed in: {tools}")
+        logger.debug(f"available tools: {list(self.tools.keys())}")
+
         tools_to_call = None
         if tools:
             tools_to_call = []
@@ -199,14 +204,29 @@ class LLMService:
                 if name in self.tools:
                     tool_function = self.tools[name]["function"]
                     logger.debug(f"function {name} called with args {args}")
-                    result = await tool_function(**args)
+                    # Get a db session if the tool function accepts it
+                    db_gen = get_db()
+                    db = await db_gen.__anext__()
+                    try:
+                        result = await tool_function(**args, db=db)
+                    finally:
+                        await db_gen.aclose()
 
                     # Create a ToolMessage instance with JSON content
+                    if isinstance(result, list):
+                        # Assume list of Pydantic models
+                        content = json.dumps(
+                            [obj.model_dump() for obj in result], default=str
+                        )
+                    else:
+                        content = (
+                            result.json() if hasattr(result, "json") else str(result)
+                        )
                     tool_message = ToolMessage(
                         role="tool",
                         tool_call_id=tool_call_id,
                         name=name,
-                        content=result.json(),
+                        content=content,
                     )
 
                     results.append(tool_message)
@@ -219,7 +239,7 @@ class LLMService:
                     role="tool",
                     tool_call_id=call.id if hasattr(call, "id") else "unknown",
                     name=call.function.name if hasattr(call, "function") else "unknown",
-                    content={"error": str(e)},  # JSON object, not a string
+                    content=str(e),  # Always a string
                 )
                 results.append(error_message)
 

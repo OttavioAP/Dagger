@@ -17,7 +17,10 @@ from app.services.llm_service import LLMService
 class WeekRepository(BaseRepository[WeekSchema]):
     def __init__(self):
         super().__init__(WeekSchema)
-        self.model = SentenceTransformer("all-MiniLM-L6-v2")
+        self.model = (
+            WeekSchema  # Fix: should be the ORM model, not the SentenceTransformer
+        )
+        self.sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
 
     async def get_by_id(self, db, week_id: uuid.UUID) -> week:
         try:
@@ -46,10 +49,7 @@ class WeekRepository(BaseRepository[WeekSchema]):
         points_range: Optional[Tuple[int, int]] = None,
     ) -> List[week]:
         try:
-            # Build the base query
             base_query = select(self.model)
-
-            # Add metadata filters
             if start_date:
                 base_query = base_query.where(self.model.start_date >= start_date)
             if end_date:
@@ -57,7 +57,6 @@ class WeekRepository(BaseRepository[WeekSchema]):
             if user_id:
                 base_query = base_query.where(self.model.user_id == user_id)
             if team_id:
-                # Join with users table to filter by team
                 base_query = base_query.join(
                     UserSchema, self.model.user_id == UserSchema.id
                 ).where(UserSchema.team_id == team_id)
@@ -84,12 +83,9 @@ class WeekRepository(BaseRepository[WeekSchema]):
                 base_query = base_query.where(
                     self.model.points_completed.between(min_points, max_points)
                 )
-
-            # Order by start_date descending and limit results
             base_query = base_query.order_by(self.model.start_date.desc()).limit(
                 number_of_weeks
             )
-
             result = await db.execute(base_query)
             return [week.from_orm(obj) for obj in result.scalars().all()]
         except Exception as e:
@@ -104,7 +100,6 @@ class WeekRepository(BaseRepository[WeekSchema]):
             if user_id:
                 query = query.where(self.model.user_id == user_id)
             elif team_id:
-                # Join users to week, filter by team_id
                 query = query.join(
                     UserSchema, self.model.user_id == UserSchema.id
                 ).where(UserSchema.team_id == team_id)
@@ -127,9 +122,6 @@ class WeekRepository(BaseRepository[WeekSchema]):
             raise
 
     async def store_week(self, db, week_and_vector: tuple[week, list[float]]):
-        """
-        Store a week and its 1024-dim vector embedding in the database.
-        """
         try:
             week_obj, embedding = week_and_vector
             week_data = week_obj.model_dump()
@@ -147,23 +139,21 @@ class WeekRepository(BaseRepository[WeekSchema]):
         self,
         db,
         query: str,
-        number_of_weeks: int,
+        user_id: Optional[uuid.UUID] = None,
+        number_of_weeks: int = 5,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        user_id: Optional[uuid.UUID] = None,
         collaborators: Optional[List[uuid.UUID]] = None,
         missed_deadlines_range: Optional[Tuple[int, int]] = None,
         completed_task_range: Optional[Tuple[int, int]] = None,
         points_range: Optional[Tuple[int, int]] = None,
     ) -> List[week]:
-        """Search weeks using semantic search and metadata filters."""
         try:
-            query_embedding = self.model.encode(query)
-
-            # Build the base query
+            query_embedding = LLMService.encode_1024(query)
+            logger.info(
+                f"Query embedding shape: {getattr(query_embedding, 'shape', None)}"
+            )
             base_query = select(self.model)
-
-            # Add metadata filters
             if start_date:
                 base_query = base_query.where(self.model.start_date >= start_date)
             if end_date:
@@ -193,12 +183,9 @@ class WeekRepository(BaseRepository[WeekSchema]):
                 base_query = base_query.where(
                     self.model.points_completed.between(min_points, max_points)
                 )
-
-            # Add vector similarity search
             base_query = base_query.order_by(
                 self.model.embedding.cosine_distance(query_embedding)
             ).limit(number_of_weeks)
-
             result = await db.execute(base_query)
             return [week.from_orm(obj) for obj in result.scalars().all()]
         except Exception as e:
@@ -218,12 +205,8 @@ class WeekRepository(BaseRepository[WeekSchema]):
         completed_task_range: Optional[Tuple[int, int]] = None,
         points_range: Optional[Tuple[int, int]] = None,
     ) -> List[week]:
-        """Find similar weeks using vector similarity and metadata filters."""
         try:
-            # Build the base query
             base_query = select(self.model)
-
-            # Add metadata filters
             if start_date:
                 base_query = base_query.where(self.model.start_date >= start_date)
             if end_date:
@@ -253,12 +236,9 @@ class WeekRepository(BaseRepository[WeekSchema]):
                 base_query = base_query.where(
                     self.model.points_completed.between(min_points, max_points)
                 )
-
-            # Add vector similarity search
             base_query = base_query.order_by(
                 self.model.embedding.cosine_distance(vector)
             ).limit(number_of_weeks)
-
             result = await db.execute(base_query)
             return [week.from_orm(obj) for obj in result.scalars().all()]
         except Exception as e:

@@ -720,6 +720,7 @@
           "agentic"
         ],
         "summary": "Chat",
+        "description": "Chat endpoint that takes a string query and required user_id, calls the LLM with SearchWeeksTool, and returns the response string.",
         "operationId": "chat_agentic_chat_get",
         "parameters": [
           {
@@ -729,6 +730,15 @@
             "schema": {
               "type": "string",
               "title": "Query"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
             }
           }
         ],

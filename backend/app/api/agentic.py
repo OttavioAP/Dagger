@@ -10,6 +10,9 @@ from datetime import datetime
 from enum import Enum
 from fastapi.responses import StreamingResponse
 import time
+from app.services.llm_service import LLMService
+from app.schema.llm.message import Message
+from app.core.tools.search_weeks_tool import SearchWeeksTool
 
 router = APIRouter(prefix="/agentic", tags=["agentic"])
 week_repository = WeekRepository()
@@ -36,10 +39,22 @@ def generate_streamed_response(query: str):
 
 
 @router.get("/chat")
-def chat(query: str):
-    return StreamingResponse(
-        generate_streamed_response(query), media_type="text/event-stream"
+async def chat(query: str, user_id: str):
+    """
+    Chat endpoint that takes a string query and required user_id, calls the LLM with SearchWeeksTool, and returns the response string.
+    """
+    llm = LLMService()
+    import json
+
+    user_message = Message(
+        role="user", content=json.dumps({"query": query, "user_id": user_id})
     )
+    # Call the LLM with the SearchWeeksTool available
+    response = await llm.query_llm(messages=[user_message], tools=["SearchWeeksTool"])
+    # If the response is a Message object, return its content; if dict, return as string
+    if hasattr(response, "content"):
+        return {"response": response.content}
+    return {"response": str(response)}
 
 
 @router.get("/search", response_model=SearchResponse)
