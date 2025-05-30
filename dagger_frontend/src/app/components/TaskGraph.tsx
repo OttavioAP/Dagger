@@ -21,6 +21,7 @@ interface TaskGraphProps {
   dags: DagWithDetails[];
   tasksDict: { [key: string]: Task };
   onNodeClick?: (taskId: string) => void;
+  onCreateClick?: () => void;
 }
 
 // Color palette for DAGs
@@ -62,7 +63,7 @@ function getLayoutedElements(nodes: Node[], edges: Edge[]) {
   });
 }
 
-const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick }) => {
+const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick, onCreateClick }) => {
   const { currentTeam } = useTeam();
 
   // Collect all task IDs that are part of any DAG (for this team only)
@@ -144,20 +145,31 @@ const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick }) =
   const layoutedNodes = useMemo(() => getLayoutedElements(nodes, edges), [nodes, edges]);
 
   return (
-    <div style={{ width: '100%', height: '600px', background: '#18181b', borderRadius: '1rem' }}>
-      <ReactFlow
-        nodes={layoutedNodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        fitView
-        panOnScroll
-        zoomOnScroll
-        defaultEdgeOptions={{ type: 'smoothstep' }}
-        onNodeClick={(_event, node) => onNodeClick?.(node.id)}
-      >
-        <Background color="#23232a" gap={24} />
-        <Controls />
-      </ReactFlow>
+    <div className="relative w-screen" style={{ height: 'calc(100vh - 4rem)', background: '#18181b', borderRadius: '1rem' }}>
+      <div className="absolute inset-0">
+        <ReactFlow
+          nodes={layoutedNodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          fitView
+          panOnScroll
+          zoomOnScroll
+          defaultEdgeOptions={{ type: 'smoothstep' }}
+          onNodeClick={(_event, node) => onNodeClick?.(node.id)}
+        >
+          <Background color="#23232a" gap={24} />
+          <Controls />
+        </ReactFlow>
+      </div>
+      {/* Centered Create Task button at the bottom */}
+      <div className="absolute left-1/2 transform -translate-x-1/2 z-10" style={{ bottom: '2rem' }}>
+        <button
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded font-semibold shadow-lg"
+          onClick={onCreateClick}
+        >
+          + Create Task
+        </button>
+      </div>
     </div>
   );
 };
