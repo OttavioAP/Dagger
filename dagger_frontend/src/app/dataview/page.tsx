@@ -6,6 +6,80 @@ import WeekComponent from '../components/week';
 import type { Week } from '@/client/types.gen';
 import { DataProvider } from '../contexts/data_context';
 
+// Placeholder chart components using Tailwind
+function HeatMap({ data, label }: { data: { date: string; value: number }[]; label: string }) {
+  return (
+    <div className="h-32 flex items-end gap-1">
+      {data.slice(-20).map((d, i) => (
+        <div key={i} className="flex-1 bg-blue-200" style={{ height: `${d.value * 10 + 10}px` }} title={`${d.date}: ${d.value}`}></div>
+      ))}
+      <span className="ml-2 text-xs text-gray-500">{label}</span>
+    </div>
+  );
+}
+function LineGraph({ data, label }: { data: { date: string; value: number }[]; label: string }) {
+  // Simple SVG line graph
+  const points = data.slice(-20).map((d, i) => `${i * 10},${40 - d.value * 3}`).join(' ');
+  return (
+    <div>
+      <svg width={200} height={40} className="bg-blue-50">
+        <polyline fill="none" stroke="#3b82f6" strokeWidth="2" points={points} />
+      </svg>
+      <div className="text-xs text-gray-500">{label}</div>
+    </div>
+  );
+}
+function BarChart({ data, label }: { data: { name: string; value: number }[]; label: string }) {
+  return (
+    <div className="flex items-end gap-1 h-32">
+      {data.slice(0, 10).map((d, i) => (
+        <div key={i} className="flex flex-col items-center">
+          <div className="bg-blue-400 w-4" style={{ height: `${d.value * 10 + 10}px` }} title={`${d.name}: ${d.value}`}></div>
+          <span className="text-xs mt-1 truncate w-8 text-center">{d.name}</span>
+        </div>
+      ))}
+      <span className="ml-2 text-xs text-gray-500">{label}</span>
+    </div>
+  );
+}
+
+// Helper to aggregate data for charts
+function getChartData(weeks: Week[]) {
+  // Heatmap data: array of { date, value }
+  const missedDeadlines: { date: string; value: number }[] = [];
+  const completedTasks: { date: string; value: number }[] = [];
+  // Line graph: array of { date, value }
+  const pointsCompleted: { date: string; value: number }[] = [];
+  // Bar chart: collaborator -> count
+  const collaboratorCounts: Record<string, number> = {};
+
+  weeks.forEach((week) => {
+    const date = week.start_date;
+    const missed = Number(week.missed_deadlines);
+    const completed = Number(week.completed_tasks);
+    const points = Number(week.points_completed);
+    missedDeadlines.push({ date, value: isNaN(missed) ? 0 : missed });
+    completedTasks.push({ date, value: isNaN(completed) ? 0 : completed });
+    pointsCompleted.push({ date, value: isNaN(points) ? 0 : points });
+    if (Array.isArray(week.collaborators)) {
+      week.collaborators.forEach((collab: any) => {
+        const name = typeof collab === 'string' ? collab : collab?.username || 'Unknown';
+        collaboratorCounts[name] = (collaboratorCounts[name] || 0) + 1;
+      });
+    }
+  });
+
+  // Bar chart data: array of { name, value }
+  const collaborators = Object.entries(collaboratorCounts).map(([name, value]) => ({ name, value }));
+
+  return {
+    missedDeadlines,
+    completedTasks,
+    pointsCompleted,
+    collaborators,
+  };
+}
+
 export default function DataView() {
   return (
     <DataProvider>
@@ -16,118 +90,33 @@ export default function DataView() {
 
 function DataViewContent() {
   const { weeks, loading, error } = useData();
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [calendarDays, setCalendarDays] = useState<Date[]>([]);
-
-  // Generate calendar days for the current month
-  useEffect(() => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    
-    // Get first day of month and last day of month
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    
-    // Get the day of week for first day (0 = Sunday, 6 = Saturday)
-    const firstDayOfWeek = firstDay.getDay();
-    
-    // Calculate days to show from previous month
-    const daysFromPrevMonth = firstDayOfWeek;
-    
-    // Calculate total days to show (including padding)
-    const totalDays = Math.ceil((lastDay.getDate() + daysFromPrevMonth) / 7) * 7;
-    
-    const days: Date[] = [];
-    
-    // Add days from previous month
-    for (let i = daysFromPrevMonth - 1; i >= 0; i--) {
-      days.push(new Date(year, month, -i));
-    }
-    
-    // Add days from current month
-    for (let i = 1; i <= lastDay.getDate(); i++) {
-      days.push(new Date(year, month, i));
-    }
-    
-    // Add days from next month
-    const remainingDays = totalDays - days.length;
-    for (let i = 1; i <= remainingDays; i++) {
-      days.push(new Date(year, month + 1, i));
-    }
-    
-    setCalendarDays(days);
-  }, [currentMonth]);
-
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + (direction === 'next' ? 1 : -1), 1));
-  };
-
-  const getWeekForDate = (date: Date): Week | undefined => {
-    return weeks.find(week => {
-      const weekStart = new Date(week.start_date);
-      const weekEnd = new Date(week.end_date);
-      return date >= weekStart && date <= weekEnd;
-    });
-  };
+  const chartData = getChartData(weeks);
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-4">
-        <button
-          onClick={() => navigateMonth('prev')}
-          className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 rounded"
-        >
-          Previous
-        </button>
-        <h1 className="text-2xl font-bold">
-          {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-        </h1>
-        <button
-          onClick={() => navigateMonth('next')}
-          className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 rounded"
-        >
-          Next
-        </button>
-      </div>
-
+      <h1 className="text-2xl font-bold mb-4">All-Time Analytics</h1>
       {loading ? (
         <div className="text-center py-4">Loading...</div>
       ) : error ? (
         <div className="text-red-500 text-center py-4">{error}</div>
       ) : (
-        <div className="grid grid-cols-7 gap-1">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="text-center font-medium py-2">
-              {day}
-            </div>
-          ))}
-          
-          {calendarDays.map((date, index) => {
-            const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
-            const isSaturday = date.getDay() === 6;
-            const week = isSaturday ? getWeekForDate(date) : undefined;
-            
-            return (
-              <div
-                key={index}
-                className={`
-                  min-h-[100px] p-1 border border-gray-200
-                  ${!isCurrentMonth ? 'bg-gray-50' : ''}
-                  ${isSaturday ? 'bg-blue-50' : ''}
-                `}
-              >
-                <div className="text-sm text-gray-500">
-                  {date.getDate()}
-                </div>
-                {week && (
-                  <WeekComponent
-                    week={week}
-                    onClick={() => console.log('Week clicked:', week)}
-                  />
-                )}
-              </div>
-            );
-          })}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white rounded shadow p-4">
+            <h2 className="font-semibold mb-2">Missed Deadlines Heatmap</h2>
+            <HeatMap data={chartData.missedDeadlines} label="Missed Deadlines" />
+          </div>
+          <div className="bg-white rounded shadow p-4">
+            <h2 className="font-semibold mb-2">Completed Tasks Heatmap</h2>
+            <HeatMap data={chartData.completedTasks} label="Completed Tasks" />
+          </div>
+          <div className="bg-white rounded shadow p-4">
+            <h2 className="font-semibold mb-2">Points Completed Over Time</h2>
+            <LineGraph data={chartData.pointsCompleted} label="Points Completed" />
+          </div>
+          <div className="bg-white rounded shadow p-4">
+            <h2 className="font-semibold mb-2">Top Collaborators</h2>
+            <BarChart data={chartData.collaborators} label="Collaborators" />
+          </div>
         </div>
       )}
     </div>
