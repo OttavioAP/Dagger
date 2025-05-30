@@ -360,11 +360,10 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       setError(null);
-      const now = new Date().toISOString();
       const response = await fetch('/api/task', {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task_id: taskId, date_of_completion: now, action: 'edit' })
+        body: JSON.stringify({ task_id: taskId, action: 'complete' })
       });
       if (!response.ok) {
         throw new Error('Failed to complete task');
@@ -416,8 +415,10 @@ export function DagProvider({ children }: { children: React.ReactNode }) {
 
   // Initial fetch of DAGs
   useEffect(() => {
-    fetchDags();
-  }, [fetchDags]);
+    if (user?.team_id) {
+      fetchDags();
+    }
+  }, [user?.team_id, fetchDags]);
 
   const value = {
     dags,

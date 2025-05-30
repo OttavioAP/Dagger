@@ -23,6 +23,7 @@ export default function DaggerviewPage() {
   useEffect(() => {
     if (!user) {
       router.replace("/login");
+      return;
     }
     refreshDags();
     refreshTeamsAndUsers();

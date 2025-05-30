@@ -5,6 +5,7 @@ import { useData } from '../contexts/data_context';
 import WeekComponent from '../components/week';
 import type { Week } from '@/client/types.gen';
 import { DataProvider } from '../contexts/data_context';
+import { useAuth } from "../contexts/auth_context";
 
 // Placeholder chart components using Tailwind
 function HeatMap({ data, label }: { data: { date: string; value: number }[]; label: string }) {
@@ -90,11 +91,12 @@ export default function DataView() {
 
 function DataViewContent() {
   const { weeks, loading, error, refresh_data } = useData();
+  const { user } = useAuth();
   const [chartsReady, setChartsReady] = useState(false);
   const [chartData, setChartData] = useState<any>(null);
 
   useEffect(() => {
-    // On mount, refresh data, then set chart data
+    if (!user) return;
     (async () => {
       setChartsReady(false);
       await refresh_data();
@@ -102,7 +104,7 @@ function DataViewContent() {
       setChartsReady(true);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user]);
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
