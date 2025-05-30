@@ -26,6 +26,33 @@ services:
       - ./db/example_data/init_user_tasks.sql:/docker-entrypoint-initdb.d/15_init_user_tasks.sql:ro
       - ./db/example_data/init_dag.sql:/docker-entrypoint-initdb.d/16_init_dag.sql:ro
       - ./db/example_data/init_week.sql:/docker-entrypoint-initdb.d/17_init_week.sql:ro
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: DockerFile
+    container_name: dagger_backend
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/postgres
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./dagger_frontend
+      dockerfile: Dockerfile
+    container_name: dagger_frontend
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:8080
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
 volumes:
   postgres_data:
     driver: local

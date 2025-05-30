@@ -675,45 +675,6 @@
         }
       }
     },
-    "/week/test_user_week_create": {
-      "post": {
-        "tags": [
-          "week"
-        ],
-        "summary": "Test User Week Create",
-        "operationId": "test_user_week_create_week_test_user_week_create_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_test_user_week_create_week_test_user_week_create_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/agentic/chat": {
       "get": {
         "tags": [
@@ -783,20 +744,6 @@
   },
   "components": {
     "schemas": {
-      "Body_test_user_week_create_week_test_user_week_create_post": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "User Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "Body_test_user_week_create_week_test_user_week_create_post"
-      },
       "CreateTeamRequest": {
         "properties": {
           "team_name": {

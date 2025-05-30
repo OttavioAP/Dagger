@@ -49,10 +49,6 @@ export interface paths {
     /** Get Weeks */
     get: operations["get_weeks_week__get"];
   };
-  "/week/test_user_week_create": {
-    /** Test User Week Create */
-    post: operations["test_user_week_create_week_test_user_week_create_post"];
-  };
   "/agentic/chat": {
     /**
      * Chat
@@ -70,14 +66,6 @@ export type webhooks = Record<string, never>;
 
 export interface components {
   schemas: {
-    /** Body_test_user_week_create_week_test_user_week_create_post */
-    Body_test_user_week_create_week_test_user_week_create_post: {
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
-    };
     /** CreateTeamRequest */
     CreateTeamRequest: {
       /** Team Name */
@@ -628,28 +616,6 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["WeekResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  /** Test User Week Create */
-  test_user_week_create_week_test_user_week_create_post: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["Body_test_user_week_create_week_test_user_week_create_post"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": unknown;
         };
       };
       /** @description Validation Error */

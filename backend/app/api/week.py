@@ -145,10 +145,10 @@ async def get_weeks(
 #         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/test_user_week_create")
-async def test_user_week_create(user_id: uuid.UUID = Body(..., embed=True)):
-    try:
-        await scheduler_service.process_user_week(user_id)
-        return {"status": "success", "message": f"Processed week for user {user_id}"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# @router.post("/test_user_week_create")
+# async def test_user_week_create(user_id: uuid.UUID = Body(..., embed=True)):
+#     try:
+#         await scheduler_service.process_user_week(user_id)
+#         return {"status": "success", "message": f"Processed week for user {user_id}"}
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
