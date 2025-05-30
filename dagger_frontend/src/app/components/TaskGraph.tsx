@@ -7,6 +7,8 @@ import dagre from 'dagre';
 import TaskNode from './TaskNode';
 import type { DagWithDetails } from '../contexts/dag_context';
 import type { Task, TaskPriority } from '@/client/types.gen';
+import { useDag } from '../contexts/dag_context';
+import { useTeam } from '../contexts/team_context';
 
 const nodeWidth = 220;
 const nodeHeight = 100;
@@ -61,35 +63,46 @@ function getLayoutedElements(nodes: Node[], edges: Edge[]) {
 }
 
 const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick }) => {
-  // Collect all task IDs that are part of any DAG
+  const { currentTeam } = useTeam();
+
+  // Collect all task IDs that are part of any DAG (for this team only)
   const dagTaskIds = useMemo(() => {
     const ids = new Set<string>();
     dags.forEach(dag => {
+      if (!currentTeam || dag.team_id !== currentTeam.id) return;
       Object.keys(dag.nodes).forEach(id => ids.add(id));
     });
     return ids;
-  }, [dags]);
+  }, [dags, currentTeam]);
 
-  // Build nodes: all DAG nodes + orphan tasks
+  // Filter DAGs to only those with at least one non-completed task and that belong to the current team
+  const filteredDags = useMemo(() =>
+    dags.filter(dag => dag.team_id === currentTeam?.id && Object.values(dag.nodes).some(task => !task.date_of_completion)),
+    [dags, currentTeam]
+  );
+
+  // Build nodes: all DAG nodes (from filtered DAGs) + orphan tasks (not in any DAG and not completed, and belong to current team)
   const nodes: Node[] = useMemo(() => {
     const dagNodes: Node[] = [];
-    dags.forEach(dag => {
+    filteredDags.forEach(dag => {
       Object.values(dag.nodes).forEach(task => {
-        dagNodes.push({
-          id: task.id!,
-          type: 'task',
-          data: {
-            label: task.task_name,
-            priority: task.priority as TaskPriority,
-            assigned_users: task.assigned_users,
-          },
-          position: { x: 0, y: 0 },
-        });
+        if (!task.date_of_completion) {
+          dagNodes.push({
+            id: task.id!,
+            type: 'task',
+            data: {
+              label: task.task_name,
+              priority: task.priority as TaskPriority,
+              assigned_users: task.assigned_users,
+            },
+            position: { x: 0, y: 0 },
+          });
+        }
       });
     });
-    // Orphan tasks (not in any DAG)
+    // Orphan tasks (not in any DAG and not completed, and belong to current team)
     const orphanNodes: Node[] = Object.values(tasksDict)
-      .filter(task => task.id && !dagTaskIds.has(task.id))
+      .filter(task => task.id && !dagTaskIds.has(task.id) && !task.date_of_completion && task.team_id === currentTeam?.id)
       .map(task => ({
         id: task.id!,
         type: 'task',
@@ -101,12 +114,12 @@ const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick }) =
         position: { x: 0, y: 0 },
       }));
     return [...dagNodes, ...orphanNodes];
-  }, [dags, tasksDict, dagTaskIds]);
+  }, [filteredDags, tasksDict, dagTaskIds, currentTeam]);
 
-  // Build edges: all DAG edges
+  // Build edges: all DAG edges (from filtered DAGs)
   const edges: Edge[] = useMemo(() => {
     const result: Edge[] = [];
-    dags.forEach((dag, dagIndex) => {
+    filteredDags.forEach((dag, dagIndex) => {
       const color = getDagColor(dagIndex);
       Object.entries(dag.dag_graph).forEach(([from, tos]) => {
         (tos as string[]).forEach((to: string) => {
@@ -125,7 +138,7 @@ const TaskGraph: React.FC<TaskGraphProps> = ({ dags, tasksDict, onNodeClick }) =
       });
     });
     return result;
-  }, [dags]);
+  }, [filteredDags]);
 
   // Layout
   const layoutedNodes = useMemo(() => getLayoutedElements(nodes, edges), [nodes, edges]);
