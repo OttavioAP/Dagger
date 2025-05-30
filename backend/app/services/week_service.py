@@ -2,15 +2,13 @@ from app.core.repository.task_repository import TasksRepository
 from app.core.repository.user_tasks_repository import UserTasksRepository
 from app.core.repository.week_repository import WeekRepository
 from app.schema.repository.week import week
+from app.services.llm_service import LLMService
 import uuid
-
-
 
 
 async def analyze_and_create_week(db, start_of_week, end_of_week, user_id):
     tasks_repo = TasksRepository()
     user_tasks_repo = UserTasksRepository()
-    week_repo = WeekRepository()
 
     # Find missed deadlines
     missed_deadlines = []
@@ -69,4 +67,30 @@ async def analyze_and_create_week(db, start_of_week, end_of_week, user_id):
         points_completed=points_completed,
     )
     # Create in DB
-    return await week_repo.create_week(db, week_obj)
+    return await encode_and_store([week_obj], db)
+
+
+async def encode_and_store(weeks: list[week], db):
+    """
+    Takes a list of week Pydantic models, encodes each to a 1024 vector, and returns a list of (week, vector) tuples.
+    """
+    week_repo = WeekRepository()
+    result = []
+    for w in weeks:
+        text_to_encode = " ".join(
+            filter(
+                None,
+                [
+                    w.summary or "",
+                    w.feedback or "",
+                    f"Completed {len(w.completed_tasks or [])} tasks",
+                    f"Missed {len(w.missed_deadlines or [])} deadlines",
+                    f"Earned {w.points_completed or 0} points",
+                ],
+            )
+        )
+        embedding = LLMService.encode_1024(text_to_encode)
+        result.append((w, embedding))
+
+    for vector_week in result:
+        await week_repo.store_week(db, vector_week)

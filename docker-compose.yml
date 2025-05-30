@@ -25,6 +25,7 @@ services:
       - ./db/example_data/init_tasks.sql:/docker-entrypoint-initdb.d/14_init_tasks.sql:ro
       - ./db/example_data/init_user_tasks.sql:/docker-entrypoint-initdb.d/15_init_user_tasks.sql:ro
       - ./db/example_data/init_dag.sql:/docker-entrypoint-initdb.d/16_init_dag.sql:ro
+      - ./db/example_data/init_week.sql:/docker-entrypoint-initdb.d/17_init_week.sql:ro
 volumes:
   postgres_data:
     driver: local

@@ -675,6 +675,25 @@
         }
       }
     },
+    "/week/import-weeks-from-json": {
+      "post": {
+        "tags": [
+          "week"
+        ],
+        "summary": "Import Weeks From Json",
+        "operationId": "import_weeks_from_json_week_import_weeks_from_json_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/agentic/search": {
       "get": {
         "tags": [

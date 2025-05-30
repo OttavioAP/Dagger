@@ -2,10 +2,9 @@ import json
 import re
 from openai import AsyncOpenAI
 from openai.types.chat.chat_completion import ChatCompletion
-from google import genai
-from google.genai import types
-from google.genai.client import AsyncClient
 from tenacity import retry, stop_after_attempt, wait_exponential
+import torch
+from transformers import AutoTokenizer, AutoModel
 
 from app.config.config import app_settings
 from app.schema.llm.message import Message, ToolMessage
@@ -72,6 +71,30 @@ class LLMService:
         # Dictionary mapping tool names to their class, schema, and function
         self.tools: Dict[str, Dict[str, Any]] = collect_tools()
         logger.debug(f"Initialized LLMService with {len(self.tools)} tools")
+
+    @staticmethod
+    def encode_1024(text: str):
+        """
+        Encode a string as a 1024-dimensional vector using the BAAI/bge-large-en model.
+        Great for retrieval, search, and RAG. Loads the model and tokenizer if not already loaded.
+        Returns a numpy array of 1024 floats.
+        """
+        try:
+            if not hasattr(LLMService, "_bge_tokenizer"):
+                LLMService._bge_tokenizer = AutoTokenizer.from_pretrained(
+                    "BAAI/bge-large-en"
+                )
+            if not hasattr(LLMService, "_bge_model"):
+                LLMService._bge_model = AutoModel.from_pretrained("BAAI/bge-large-en")
+            tokenizer = LLMService._bge_tokenizer
+            model = LLMService._bge_model
+            inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
+            with torch.no_grad():
+                embeddings = model(**inputs).last_hidden_state[:, 0]  # [CLS] token
+            return embeddings.squeeze().cpu().numpy()
+        except Exception as e:
+            logger.error(f"Error encoding text: {e}")
+            raise
 
     def _client(self) -> AsyncOpenAI:
         return AsyncOpenAI(
@@ -201,68 +224,3 @@ class LLMService:
                 results.append(error_message)
 
         return results
-
-
-class GoogleGeminiService:
-    def __init__(
-        self,
-        model_name: str = app_settings.GEMINI_MODEL_NAME,
-        api_key: str = app_settings.GEMINI_API_KEY,
-    ):
-        self.model_name = model_name
-        self.api_key = api_key
-
-    def _client(self) -> genai.Client:
-        return genai.Client(api_key=self.api_key)
-
-    @staticmethod
-    def get_content_from_messages(messages: list[Message]):
-        return [
-            types.Content(
-                role=message.role,
-                parts=[types.Part.from_text(text=message.content)],
-            )
-            for message in messages
-        ]
-
-    @retry(
-        stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=15)
-    )
-    async def query_llm(
-        self,
-        messages: list[Message],
-        search_enabled=True,
-        json_response=True,
-        **kwargs,
-    ) -> Message:
-        try:
-            client = self._client()
-            contents = self.get_content_from_messages(messages)
-            tool = (
-                types.Tool(google_search=types.GoogleSearch())
-                if search_enabled
-                else None
-            )
-            generate_content_config = types.GenerateContentConfig(
-                response_mime_type="application/json"
-                if json_response and not search_enabled
-                else "text/plain",
-                tools=[tool] if tool else None,
-                **kwargs,
-            )
-            response = await client.aio.models.generate_content(
-                model=self.model_name, contents=contents, config=generate_content_config
-            )
-            return (
-                {
-                    "response": clean_json_response(response.text),
-                    "grounding_chunks": response.candidates[
-                        0
-                    ].grounding_metadata.grounding_chunks,
-                }
-                if search_enabled and json_response
-                else response
-            )
-        except Exception as e:
-            logger.error(f"Error querying LLM: {e}")
-            raise LLMException(f"Error querying LLM: {e}") from e

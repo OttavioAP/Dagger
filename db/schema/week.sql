@@ -11,5 +11,5 @@ CREATE TABLE IF NOT EXISTS week (
     missed_deadlines UUID[],
     completed_tasks UUID[],
     points_completed INT,
-    embedding vector(1536)
+    embedding vector(1024)
 );
