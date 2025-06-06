@@ -339,167 +339,169 @@ export default function TaskModal({ mode, task, onClose }: TaskModalProps) {
 
   // Modal UI
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-      <div className="bg-[#18181b] text-white rounded-xl shadow-2xl w-full max-w-lg p-8 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4 overflow-y-auto">
+      <div className="bg-[#18181b] text-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative my-4">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white">&times;</button>
-        <h2 className="text-2xl font-bold mb-4">{mode === 'create' ? 'Create Task' : 'Edit Task'}</h2>
-        <div className="space-y-4">
-          <div>
-            <label className="block mb-1 font-semibold" htmlFor="task-name">Task Name</label>
-            <input id="task-name" className="w-full p-2 rounded bg-[#23232a] text-white" placeholder="Task Name" value={taskName} onChange={e => setTaskName(e.target.value)} />
-          </div>
-          <div>
-            <div className="flex items-center mb-1">
-              <label className="font-semibold mr-2" htmlFor="description">Description</label>
-              <button
-                type="button"
-                className="text-xs text-blue-400 underline border border-blue-400 rounded px-2 py-0.5 ml-auto focus:outline-none focus:ring-2 focus:ring-blue-400"
-                style={{ minWidth: 70 }}
-                onClick={() => setDescExpanded(e => !e)}
-              >
-                {descExpanded ? 'Collapse' : 'Expand'}
-              </button>
+        <div className="p-8">
+          <h2 className="text-2xl font-bold mb-4">{mode === 'create' ? 'Create Task' : 'Edit Task'}</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block mb-1 font-semibold" htmlFor="task-name">Task Name</label>
+              <input id="task-name" className="w-full p-2 rounded bg-[#23232a] text-white" placeholder="Task Name" value={taskName} onChange={e => setTaskName(e.target.value)} />
             </div>
-            <textarea
-              id="description"
-              className="w-full p-2 rounded bg-[#23232a] text-white transition-all"
-              placeholder="Description"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              rows={descExpanded ? 8 : 2}
-              style={descExpanded ? { minHeight: 120 } : { minHeight: 40 }}
-            />
-          </div>
-          <div>
-            <label className="block mb-1 font-semibold" htmlFor="deadline">Deadline</label>
-            <input id="deadline" className="w-full p-2 rounded bg-[#23232a] text-white" type="date" value={deadline || ''} onChange={e => handleDeadlineChange(e.target.value)} />
-            {deadlineError && <div className="text-red-400 text-sm mt-1">{deadlineError}</div>}
-          </div>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <label className="block mb-1 font-semibold" htmlFor="priority">Priority</label>
-              <select id="priority" className="w-full p-2 rounded bg-[#23232a] text-white" value={priority} onChange={e => setPriority(e.target.value as TaskPriority)}>
-                {priorities.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </div>
-            <div className="flex-1">
-              <label className="block mb-1 font-semibold" htmlFor="focus">Focus</label>
-              <select id="focus" className="w-full p-2 rounded bg-[#23232a] text-white" value={focus} onChange={e => setFocus(e.target.value as TaskFocus)}>
-                {focuses.map(f => <option key={f} value={f}>{f}</option>)}
-              </select>
-            </div>
-            <div className="w-20">
-              <label className="block mb-1 font-semibold" htmlFor="points">Points</label>
-              <input id="points" className="w-full p-2 rounded bg-[#23232a] text-white" type="number" min={0} value={points} onChange={e => setPoints(Number(e.target.value))} placeholder="Points" />
-              <div className="text-xs text-gray-400 italic mt-1">8 points = 1 day of work</div>
-            </div>
-          </div>
-          <div>
-            <div className="flex items-center mb-1">
-              <label className="font-semibold mr-2" htmlFor="notes">Notes</label>
-              <button
-                type="button"
-                className="text-xs text-blue-400 underline border border-blue-400 rounded px-2 py-0.5 ml-auto focus:outline-none focus:ring-2 focus:ring-blue-400"
-                style={{ minWidth: 70 }}
-                onClick={() => setNotesExpanded(e => !e)}
-              >
-                {notesExpanded ? 'Collapse' : 'Expand'}
-              </button>
-            </div>
-            <textarea
-              id="notes"
-              className="w-full p-2 rounded bg-[#23232a] text-white transition-all"
-              placeholder="Notes"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              rows={notesExpanded ? 8 : 2}
-              style={notesExpanded ? { minHeight: 120 } : { minHeight: 40 }}
-            />
-          </div>
-          {/* Dependencies */}
-          <div>
-            <label className="block mb-1 font-semibold">Dependencies</label>
-            {depInputs.map((input, idx) => (
-              <div key={idx} className="flex gap-2 mb-2">
-                <input
-                  className="flex-1 p-2 rounded bg-[#23232a] text-white"
-                  placeholder="Search task..."
-                  value={input.value}
-                  onChange={e => handleDepInputChange(idx, e.target.value)}
-                  list={`dep-tasks-${idx}`}
-                />
-                <datalist id={`dep-tasks-${idx}`}> 
-                  {availableTasks
-                    .filter(t => {
-                      const val = input.value;
-                      return t.task_name.toLowerCase().includes(val.toLowerCase());
-                    })
-                    .map(t => (
-                      <option key={t.id} value={t.task_name} />
-                    ))}
-                </datalist>
-                {/* Only show remove button if this field has a value */}
-                {(input.value || input.task) && (
-                  <button type="button" onClick={() => handleRemoveDependency(idx)} className="text-red-400">Remove</button>
-                )}
+            <div>
+              <div className="flex items-center mb-1">
+                <label className="font-semibold mr-2" htmlFor="description">Description</label>
+                <button
+                  type="button"
+                  className="text-xs text-blue-400 underline border border-blue-400 rounded px-2 py-0.5 ml-auto focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  style={{ minWidth: 70 }}
+                  onClick={() => setDescExpanded(e => !e)}
+                >
+                  {descExpanded ? 'Collapse' : 'Expand'}
+                </button>
               </div>
-            ))}
-            <button type="button" onClick={addDepField} className="text-blue-400">+ Add Dependency</button>
-          </div>
-          {/* Assigned Users */}
-          <div>
-            <label className="block mb-1 font-semibold">Assigned Users</label>
-            {userInputs.map((input, idx) => (
-              <div key={idx} className="flex gap-2 mb-2">
-                <input
-                  className="flex-1 p-2 rounded bg-[#23232a] text-white"
-                  placeholder="Search user..."
-                  value={input}
-                  onChange={e => handleUserInputChange(idx, e.target.value)}
-                  list={`user-list-${idx}`}
-                  autoComplete="off"
-                />
-                <datalist id={`user-list-${idx}`}> 
-                  {availableUsers
-                    .filter(u => u.username.toLowerCase().includes(input.toLowerCase()))
-                    .map(u => (
-                      <option key={u.id} value={u.username} />
-                    ))}
-                </datalist>
-                {/* Only show remove button if this field has a value */}
-                {input && (
-                  <button type="button" onClick={() => handleRemoveUser(idx)} className="text-red-400">Remove</button>
-                )}
+              <textarea
+                id="description"
+                className="w-full p-2 rounded bg-[#23232a] text-white transition-all"
+                placeholder="Description"
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                rows={descExpanded ? 8 : 2}
+                style={descExpanded ? { minHeight: 120 } : { minHeight: 40 }}
+              />
+            </div>
+            <div>
+              <label className="block mb-1 font-semibold" htmlFor="deadline">Deadline</label>
+              <input id="deadline" className="w-full p-2 rounded bg-[#23232a] text-white" type="date" value={deadline || ''} onChange={e => handleDeadlineChange(e.target.value)} />
+              {deadlineError && <div className="text-red-400 text-sm mt-1">{deadlineError}</div>}
+            </div>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="block mb-1 font-semibold" htmlFor="priority">Priority</label>
+                <select id="priority" className="w-full p-2 rounded bg-[#23232a] text-white" value={priority} onChange={e => setPriority(e.target.value as TaskPriority)}>
+                  {priorities.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
               </div>
-            ))}
-            <button type="button" onClick={addUserField} className="text-blue-400">+ Add User</button>
-          </div>
-        </div>
-        <div className="flex flex-col gap-4 mt-8">
-          {mode === 'edit' && (
-            <>
-              <div className="flex justify-between">
-                <button onClick={handleDelete} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Delete</button>
-                <div className="flex gap-2 ml-auto">
-                  <button onClick={onClose} className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded">Cancel</button>
-                  <button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Save</button>
+              <div className="flex-1">
+                <label className="block mb-1 font-semibold" htmlFor="focus">Focus</label>
+                <select id="focus" className="w-full p-2 rounded bg-[#23232a] text-white" value={focus} onChange={e => setFocus(e.target.value as TaskFocus)}>
+                  {focuses.map(f => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </div>
+              <div className="w-20">
+                <label className="block mb-1 font-semibold" htmlFor="points">Points</label>
+                <input id="points" className="w-full p-2 rounded bg-[#23232a] text-white" type="number" min={0} value={points} onChange={e => setPoints(Number(e.target.value))} placeholder="Points" />
+                <div className="text-xs text-gray-400 italic mt-1">8 points = 1 day of work</div>
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center mb-1">
+                <label className="font-semibold mr-2" htmlFor="notes">Notes</label>
+                <button
+                  type="button"
+                  className="text-xs text-blue-400 underline border border-blue-400 rounded px-2 py-0.5 ml-auto focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  style={{ minWidth: 70 }}
+                  onClick={() => setNotesExpanded(e => !e)}
+                >
+                  {notesExpanded ? 'Collapse' : 'Expand'}
+                </button>
+              </div>
+              <textarea
+                id="notes"
+                className="w-full p-2 rounded bg-[#23232a] text-white transition-all"
+                placeholder="Notes"
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                rows={notesExpanded ? 8 : 2}
+                style={notesExpanded ? { minHeight: 120 } : { minHeight: 40 }}
+              />
+            </div>
+            {/* Dependencies */}
+            <div>
+              <label className="block mb-1 font-semibold">Dependencies</label>
+              {depInputs.map((input, idx) => (
+                <div key={idx} className="flex gap-2 mb-2">
+                  <input
+                    className="flex-1 p-2 rounded bg-[#23232a] text-white"
+                    placeholder="Search task..."
+                    value={input.value}
+                    onChange={e => handleDepInputChange(idx, e.target.value)}
+                    list={`dep-tasks-${idx}`}
+                  />
+                  <datalist id={`dep-tasks-${idx}`}> 
+                    {availableTasks
+                      .filter(t => {
+                        const val = input.value;
+                        return t.task_name.toLowerCase().includes(val.toLowerCase());
+                      })
+                      .map(t => (
+                        <option key={t.id} value={t.task_name} />
+                      ))}
+                  </datalist>
+                  {/* Only show remove button if this field has a value */}
+                  {(input.value || input.task) && (
+                    <button type="button" onClick={() => handleRemoveDependency(idx)} className="text-red-400">Remove</button>
+                  )}
                 </div>
-              </div>
-              <button
-                onClick={handleComplete}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded w-full font-semibold"
-                disabled={!!task?.date_of_completion || !isLeaf}
-              >
-                {task?.date_of_completion ? 'Task Completed' : !isLeaf ? 'Only leaves can be completed' : 'Mark as Complete'}
-              </button>
-            </>
-          )}
-          {mode === 'create' && (
-            <div className="flex gap-2 ml-auto justify-end">
-              <button onClick={onClose} className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded">Cancel</button>
-              <button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Create</button>
+              ))}
+              <button type="button" onClick={addDepField} className="text-blue-400">+ Add Dependency</button>
             </div>
-          )}
+            {/* Assigned Users */}
+            <div>
+              <label className="block mb-1 font-semibold">Assigned Users</label>
+              {userInputs.map((input, idx) => (
+                <div key={idx} className="flex gap-2 mb-2">
+                  <input
+                    className="flex-1 p-2 rounded bg-[#23232a] text-white"
+                    placeholder="Search user..."
+                    value={input}
+                    onChange={e => handleUserInputChange(idx, e.target.value)}
+                    list={`user-list-${idx}`}
+                    autoComplete="off"
+                  />
+                  <datalist id={`user-list-${idx}`}> 
+                    {availableUsers
+                      .filter(u => u.username.toLowerCase().includes(input.toLowerCase()))
+                      .map(u => (
+                        <option key={u.id} value={u.username} />
+                      ))}
+                  </datalist>
+                  {/* Only show remove button if this field has a value */}
+                  {input && (
+                    <button type="button" onClick={() => handleRemoveUser(idx)} className="text-red-400">Remove</button>
+                  )}
+                </div>
+              ))}
+              <button type="button" onClick={addUserField} className="text-blue-400">+ Add User</button>
+            </div>
+          </div>
+          <div className="flex flex-col gap-4 mt-8">
+            {mode === 'edit' && (
+              <>
+                <div className="flex justify-between">
+                  <button onClick={handleDelete} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Delete</button>
+                  <div className="flex gap-2 ml-auto">
+                    <button onClick={onClose} className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded">Cancel</button>
+                    <button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Save</button>
+                  </div>
+                </div>
+                <button
+                  onClick={handleComplete}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded w-full font-semibold"
+                  disabled={!!task?.date_of_completion || !isLeaf}
+                >
+                  {task?.date_of_completion ? 'Task Completed' : !isLeaf ? 'Only leaves can be completed' : 'Mark as Complete'}
+                </button>
+              </>
+            )}
+            {mode === 'create' && (
+              <div className="flex gap-2 ml-auto justify-end">
+                <button onClick={onClose} className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded">Cancel</button>
+                <button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Create</button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
